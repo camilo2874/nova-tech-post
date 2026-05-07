@@ -1,0 +1,846 @@
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import AppShell from "../components/AppShell";
+import {
+  crearCategoria,
+  eliminarCategoria,
+  obtenerCategorias,
+  renombrarCategoria,
+} from "../services/categoriasServicio";
+import {
+  actualizarProducto,
+  crearProducto,
+  eliminarProducto,
+  obtenerProductos,
+} from "../services/productosServicio";
+import "../styles/inventario.css";
+
+const TIMEOUT_FETCH_MS = 12000;
+
+function conTimeout(promesa, ms, valorDefecto) {
+  return Promise.race([
+    promesa,
+    new Promise((resolve) => setTimeout(() => resolve(valorDefecto), ms)),
+  ]);
+}
+
+const estadoInicial = {
+  nombre: "",
+  categoria: "",
+  precio_compra: "",
+  precio_venta: "",
+  stock: "",
+  stock_minimo: "2",
+  codigo_barras: "",
+};
+
+function formatCOP(valor) {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+  }).format(valor ?? 0);
+}
+
+/* ─── Modal genérico ─────────────────────────────────────── */
+function Modal({ open, onClose, titulo, children, size = "md" }) {
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="inv-modal-overlay" onClick={onClose}>
+      <div
+        className={`inv-modal-box inv-modal-${size}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="inv-modal-header">
+          <h2 className="inv-modal-title">{titulo}</h2>
+          <button className="inv-modal-close" onClick={onClose} type="button">✕</button>
+        </div>
+        <div className="inv-modal-body">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Tarjeta de estadística ─────────────────────────────── */
+function StatCard({ icon, label, value, sub, variant = "blue", badge }) {
+  return (
+    <div className={`inv-stat-card inv-stat-${variant}`}>
+      <div className="inv-stat-icon">{icon}</div>
+      <div className="inv-stat-content">
+        {badge && <span className="inv-stat-badge">{badge}</span>}
+        <div className="inv-stat-label">{label}</div>
+        <div className="inv-stat-value">{value}</div>
+        {sub && <div className="inv-stat-sub">{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Tarjeta de producto ────────────────────────────────── */
+function ProductCard({ producto, esAdmin, onEditar, onEliminar }) {
+  const stockMinimo = producto.stock_minimo ?? 2;
+  const stockPct = Math.min((producto.stock / Math.max(stockMinimo * 2, 1)) * 100, 100);
+  const stockBajo = producto.stock <= stockMinimo;
+  const valorInventario = (producto.precio_venta ?? 0) * producto.stock;
+
+  return (
+    <div className={`inv-prod-card${stockBajo ? " inv-prod-card--alerta" : ""}`}>
+      {stockBajo && <span className="inv-prod-badge-alerta">¡ALERTA!</span>}
+
+      <div>
+        <div className="inv-prod-nombre">{producto.nombre}</div>
+        <span className="inv-prod-cat">{producto.categoria}</span>
+      </div>
+
+      <div className="inv-prod-precio-wrap">
+        <div className="inv-prod-precio-label">Precio de Venta</div>
+        <div className="inv-prod-precio">{formatCOP(producto.precio_venta)}</div>
+      </div>
+
+      <div className="inv-prod-stock-row">
+        <span className="inv-prod-stock-label">Stock Disponible</span>
+        <span className={`inv-prod-stock-num${stockBajo ? " inv-prod-stock-num--low" : ""}`}>
+          {producto.stock}
+        </span>
+      </div>
+      <div className="inv-prod-stock-bar">
+        <div
+          className={`inv-prod-stock-fill${stockBajo ? " inv-prod-stock-fill--low" : ""}`}
+          style={{ width: `${Math.max(stockPct, 4)}%` }}
+        />
+      </div>
+      <div className="inv-prod-stock-min">Mínimo requerido: {stockMinimo} unidades</div>
+
+      <div className="inv-prod-valor">
+        <span className="inv-prod-valor-label">Valor en inventario</span>
+        <span className="inv-prod-valor-num">{formatCOP(valorInventario)}</span>
+      </div>
+
+      {esAdmin ? (
+        <div className="inv-prod-actions">
+          <button
+            className="inv-btn inv-btn-edit"
+            type="button"
+            onClick={() => onEditar(producto)}
+          >
+            ✏ Editar
+          </button>
+          <button
+            className="inv-btn inv-btn-delete"
+            type="button"
+            onClick={() => onEliminar(producto)}
+          >
+            🗑
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ─── Página principal ───────────────────────────────────── */
+export default function InventarioPage() {
+  const { rol } = useAuth();
+  const esAdmin = rol === "administrador" || rol === "superadministrador";
+
+  const [productos, setProductos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
+  // Estado de modales
+  const [modalProducto, setModalProducto] = useState(false);
+  const [modalEliminar, setModalEliminar] = useState(false);
+  const [modalCategorias, setModalCategorias] = useState(false);
+
+  // Estado de formulario producto
+  const [editandoId, setEditandoId] = useState(null);
+  const [formulario, setFormulario] = useState(estadoInicial);
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+
+  // Estado de categorías
+  const [nuevaCategoria, setNuevaCategoria] = useState("");
+  const [renombrandoCategoria, setRenombrandoCategoria] = useState(null);
+  const [nuevoNombreCategoria, setNuevoNombreCategoria] = useState("");
+
+  /* ── Carga de datos ──────────────────────────────────── */
+  async function cargarProductos() {
+    try {
+      setCargando(true);
+      const resultado = await conTimeout(obtenerProductos(), TIMEOUT_FETCH_MS, null);
+      if (resultado === null) throw new Error("Tiempo de espera agotado al cargar productos.");
+      setProductos(resultado ?? []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  async function cargarCategorias() {
+    try {
+      const resultado = await conTimeout(obtenerCategorias(), TIMEOUT_FETCH_MS, null);
+      if (resultado === null) throw new Error("Tiempo de espera agotado al cargar categorías.");
+      setCategorias(resultado);
+    } catch (err) {
+      setError(`Categorías: ${err.message}`);
+    }
+  }
+
+  useEffect(() => {
+    cargarProductos();
+    cargarCategorias();
+  }, []);
+
+  /* ── Datos computados ────────────────────────────────── */
+  const productosFiltrados = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
+    return productos.filter((p) => {
+      const coincideCategoria = categoriaFiltro === "todas" || p.categoria === categoriaFiltro;
+      const coincideBusqueda =
+        !termino ||
+        p.nombre.toLowerCase().includes(termino) ||
+        (p.codigo_barras ?? "").toLowerCase().includes(termino);
+      return coincideCategoria && coincideBusqueda;
+    });
+  }, [productos, busqueda, categoriaFiltro]);
+
+  const categoriasDisponibles = useMemo(() => {
+    const desdeTabla = categorias.map((c) => c.nombre);
+    const dinamicas = productos.map((p) => p.categoria).filter(Boolean);
+    return Array.from(new Set([...desdeTabla, ...dinamicas]));
+  }, [categorias, productos]);
+
+  const totalValorVenta = useMemo(
+    () => productos.reduce((acc, p) => acc + (p.precio_venta ?? 0) * p.stock, 0),
+    [productos],
+  );
+
+  const totalValorCompra = useMemo(
+    () => productos.reduce((acc, p) => acc + (p.precio_compra ?? 0) * p.stock, 0),
+    [productos],
+  );
+  const totalUnidades = useMemo(
+    () => productos.reduce((acc, p) => acc + p.stock, 0),
+    [productos],
+  );
+  const stockBajoCount = useMemo(
+    () => productos.filter((p) => p.stock <= (p.stock_minimo ?? 2)).length,
+    [productos],
+  );
+
+  /* ── Modal producto: abrir / cerrar ──────────────────── */
+  function abrirNuevoProducto() {
+    setEditandoId(null);
+    setFormulario({ ...estadoInicial, categoria: categorias[0]?.nombre ?? "" });
+    setError("");
+    setMensaje("");
+    setModalProducto(true);
+  }
+
+  function abrirEditarProducto(producto) {
+    setEditandoId(producto.id);
+    setFormulario({
+      nombre: producto.nombre,
+      categoria: producto.categoria ?? categorias[0]?.nombre ?? "",
+      precio_compra: String(producto.precio_compra ?? 0),
+      precio_venta: String(producto.precio_venta ?? producto.precio ?? 0),
+      stock: String(producto.stock),
+      stock_minimo: String(producto.stock_minimo ?? 2),
+      codigo_barras: producto.codigo_barras ?? "",
+    });
+    setError("");
+    setMensaje("");
+    setModalProducto(true);
+  }
+
+  function cerrarModalProducto() {
+    setModalProducto(false);
+    setEditandoId(null);
+    setError("");
+  }
+
+  function manejarCambioFormulario(e) {
+    const { name, value } = e.target;
+    setFormulario((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function generarCodigoBarras() {
+    const aleatorio = Math.floor(1000 + Math.random() * 9000);
+    const codigo = `NT${Date.now()}${aleatorio}`.slice(0, 20);
+    setFormulario((prev) => ({ ...prev, codigo_barras: codigo }));
+  }
+
+  async function manejarSubmit(e) {
+    e.preventDefault();
+    setError("");
+
+    if (!esAdmin) {
+      setError("No tienes permisos para crear o editar productos.");
+      return;
+    }
+
+    const { nombre, categoria, precio_compra, precio_venta, stock, codigo_barras } = formulario;
+    if (!nombre || !categoria || !precio_compra || !precio_venta || !stock || !codigo_barras) {
+      setError("Completa todos los campos obligatorios.");
+      return;
+    }
+
+    const payload = {
+      nombre: nombre.trim(),
+      categoria: categoria.trim().toLowerCase(),
+      precio_compra: Number(precio_compra),
+      precio_venta: Number(precio_venta),
+      precio: Number(precio_venta),
+      stock: Number(stock),
+      stock_minimo: Number(formulario.stock_minimo) || 2,
+      codigo_barras: codigo_barras.trim(),
+    };
+
+    if (isNaN(payload.precio_compra) || payload.precio_compra < 0) {
+      setError("Precio de compra inválido.");
+      return;
+    }
+    if (isNaN(payload.precio_venta) || payload.precio_venta < 0) {
+      setError("Precio de venta inválido.");
+      return;
+    }
+    if (isNaN(payload.stock) || payload.stock < 0) {
+      setError("Stock inválido.");
+      return;
+    }
+
+    try {
+      setGuardando(true);
+      if (editandoId) {
+        await actualizarProducto(editandoId, payload);
+        setMensaje("Producto actualizado correctamente.");
+      } else {
+        await crearProducto(payload);
+        setMensaje("Producto creado correctamente.");
+      }
+      cerrarModalProducto();
+      await cargarProductos();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  /* ── Modal eliminar ──────────────────────────────────── */
+  function abrirEliminar(producto) {
+    if (!esAdmin) return;
+    setProductoSeleccionado(producto);
+    setModalEliminar(true);
+  }
+
+  async function confirmarEliminar() {
+    if (!productoSeleccionado) return;
+    try {
+      setGuardando(true);
+      await eliminarProducto(productoSeleccionado.id);
+      setMensaje("Producto eliminado correctamente.");
+      setModalEliminar(false);
+      setProductoSeleccionado(null);
+      await cargarProductos();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  /* ── Modal categorías ────────────────────────────────── */
+  function cerrarModalCategorias() {
+    setModalCategorias(false);
+    setRenombrandoCategoria(null);
+    setNuevaCategoria("");
+    setError("");
+  }
+
+  async function manejarCrearCategoria(e) {
+    e.preventDefault();
+    if (!esAdmin || !nuevaCategoria.trim()) return;
+    try {
+      const creada = await crearCategoria(nuevaCategoria);
+      setNuevaCategoria("");
+      setMensaje("Categoría creada.");
+      await cargarCategorias();
+      setFormulario((prev) => ({ ...prev, categoria: creada.nombre }));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function iniciarRenombrado(cat) {
+    setRenombrandoCategoria(cat);
+    setNuevoNombreCategoria(cat.nombre);
+  }
+
+  async function confirmarRenombrado(e) {
+    e.preventDefault();
+    if (!renombrandoCategoria || !nuevoNombreCategoria.trim()) return;
+    try {
+      await renombrarCategoria({
+        id: renombrandoCategoria.id,
+        nombreActual: renombrandoCategoria.nombre,
+        nuevoNombre: nuevoNombreCategoria,
+      });
+      setMensaje("Categoría renombrada.");
+      setRenombrandoCategoria(null);
+      await Promise.all([cargarCategorias(), cargarProductos()]);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function manejarEliminarCategoria(cat) {
+    if (!esAdmin || cat.nombre === "general") return;
+    try {
+      await eliminarCategoria({ id: cat.id, nombre: cat.nombre, categoriaDestino: "general" });
+      setMensaje("Categoría eliminada.");
+      await Promise.all([cargarCategorias(), cargarProductos()]);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  /* ── Render ──────────────────────────────────────────── */
+  return (
+    <AppShell
+      title="Inventario de Productos"
+      description={
+        esAdmin
+          ? "Gestión y control de productos y stock"
+          : "Consulta de productos, precios y niveles de stock"
+      }
+      actions={
+        esAdmin ? (
+          <button
+            className="inv-btn inv-btn-primary"
+            type="button"
+            onClick={abrirNuevoProducto}
+          >
+            + Nuevo Producto
+          </button>
+        ) : null
+      }
+    >
+      <div className="inv-page">
+
+        {/* ── Tarjetas de estadísticas ─────────────────── */}
+        <div className="inv-stats-grid">
+          <StatCard
+            icon="📦"
+            label="Total Productos"
+            value={productos.length}
+            sub={`${categoriasDisponibles.length} referencias distintas`}
+            variant="blue"
+          />
+          <StatCard
+            icon="⚠️"
+            label="Stock Bajo"
+            value={stockBajoCount}
+            sub="Requieren reposición"
+            variant={stockBajoCount > 0 ? "danger" : "green"}
+            badge={stockBajoCount > 0 ? "¡ALERTA!" : null}
+          />
+          <StatCard
+            icon="📥"
+            label="Capital Invertido"
+            value={formatCOP(totalValorCompra)}
+            sub="Valor a precio de compra"
+            variant="green"
+          />
+          <StatCard
+            icon="💰"
+            label="Valor a Precio Venta"
+            value={formatCOP(totalValorVenta)}
+            sub="Potencial si vendes todo"
+            variant="teal"
+          />
+          <StatCard
+            icon="🛒"
+            label="Total Unidades"
+            value={totalUnidades.toLocaleString("es-CO")}
+            sub="Suma de todo el stock"
+            variant="purple"
+          />
+        </div>
+
+        {/* ── Barra de herramientas ────────────────────── */}
+        <div className="inv-toolbar">
+          <input
+            className="nt-field inv-search"
+            placeholder="Buscar productos..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+          <select
+            className="nt-field inv-cat-select"
+            value={categoriaFiltro}
+            onChange={(e) => setCategoriaFiltro(e.target.value)}
+          >
+            <option value="todas">Todas las categorías</option>
+            {categoriasDisponibles.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          {esAdmin ? (
+            <button
+              className="inv-btn inv-btn-ghost"
+              type="button"
+              onClick={() => setModalCategorias(true)}
+            >
+              ⚙ Categorías
+            </button>
+          ) : null}
+        </div>
+
+        {/* ── Alertas ──────────────────────────────────── */}
+        {error && (
+          <div className="nt-alert nt-alert-error">
+            Error: {error}
+            <button className="inv-alert-close" type="button" onClick={() => setError("")}>✕</button>
+          </div>
+        )}
+        {mensaje && (
+          <div className="nt-alert nt-alert-success">
+            {mensaje}
+            <button className="inv-alert-close" type="button" onClick={() => setMensaje("")}>✕</button>
+          </div>
+        )}
+
+        {/* ── Grid de productos ────────────────────────── */}
+        {cargando ? (
+          <div className="inv-loading">
+            <div className="inv-spinner" />
+            <span>Cargando productos...</span>
+          </div>
+        ) : productosFiltrados.length === 0 ? (
+          <div className="inv-empty">
+            <div className="inv-empty-icon">📭</div>
+            <div>No hay productos para mostrar.</div>
+            {esAdmin && (
+              <button
+                className="inv-btn inv-btn-primary"
+                type="button"
+                onClick={abrirNuevoProducto}
+              >
+                + Crear primer producto
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="inv-grid">
+            {productosFiltrados.map((p) => (
+              <ProductCard
+                key={p.id}
+                producto={p}
+                esAdmin={esAdmin}
+                onEditar={abrirEditarProducto}
+                onEliminar={abrirEliminar}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ══ Modal: Crear / Editar Producto ═══════════════ */}
+      <Modal
+        open={modalProducto}
+        onClose={cerrarModalProducto}
+        titulo={editandoId ? "Editar Producto" : "Nuevo Producto"}
+        size="lg"
+      >
+        <form className="inv-form" onSubmit={manejarSubmit}>
+          {error && <div className="nt-alert nt-alert-error">{error}</div>}
+
+          <div className="inv-form-grid">
+            <div className="inv-form-field">
+              <label className="inv-label">
+                Nombre <span className="inv-required">*</span>
+              </label>
+              <input
+                className="nt-field"
+                name="nombre"
+                placeholder="Nombre del producto"
+                value={formulario.nombre}
+                onChange={manejarCambioFormulario}
+                disabled={guardando}
+                autoFocus
+              />
+            </div>
+
+            <div className="inv-form-field">
+              <label className="inv-label">
+                Categoría <span className="inv-required">*</span>
+              </label>
+              <select
+                className="nt-field"
+                name="categoria"
+                value={formulario.categoria}
+                onChange={manejarCambioFormulario}
+                disabled={guardando}
+              >
+                <option value="">Selecciona categoría</option>
+                {categorias.map((c) => (
+                  <option key={c.nombre} value={c.nombre}>{c.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="inv-form-field">
+              <label className="inv-label">
+                Precio Compra <span className="inv-required">*</span>
+              </label>
+              <input
+                className="nt-field"
+                name="precio_compra"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                value={formulario.precio_compra}
+                onChange={manejarCambioFormulario}
+                disabled={guardando}
+              />
+            </div>
+
+            <div className="inv-form-field">
+              <label className="inv-label">
+                Precio Venta <span className="inv-required">*</span>
+              </label>
+              <input
+                className="nt-field"
+                name="precio_venta"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                value={formulario.precio_venta}
+                onChange={manejarCambioFormulario}
+                disabled={guardando}
+              />
+            </div>
+
+            <div className="inv-form-field">
+              <label className="inv-label">
+                Stock Actual <span className="inv-required">*</span>
+              </label>
+              <input
+                className="nt-field"
+                name="stock"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={formulario.stock}
+                onChange={manejarCambioFormulario}
+                disabled={guardando}
+              />
+            </div>
+
+            <div className="inv-form-field">
+              <label className="inv-label">Stock Mínimo</label>
+              <input
+                className="nt-field"
+                name="stock_minimo"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="2"
+                value={formulario.stock_minimo}
+                onChange={manejarCambioFormulario}
+                disabled={guardando}
+              />
+            </div>
+          </div>
+
+          <div className="inv-form-field">
+            <label className="inv-label">
+              Código de Barras <span className="inv-required">*</span>
+            </label>
+            <div className="inv-barcode-row">
+              <input
+                className="nt-field nt-mono inv-grow"
+                name="codigo_barras"
+                placeholder="Escanea, escribe o genera"
+                value={formulario.codigo_barras}
+                onChange={manejarCambioFormulario}
+                disabled={guardando}
+              />
+              <button
+                className="inv-btn inv-btn-ghost"
+                type="button"
+                onClick={generarCodigoBarras}
+                disabled={guardando}
+              >
+                Generar
+              </button>
+            </div>
+          </div>
+
+          <div className="inv-form-actions">
+            <button
+              className="inv-btn inv-btn-ghost"
+              type="button"
+              onClick={cerrarModalProducto}
+              disabled={guardando}
+            >
+              Cancelar
+            </button>
+            <button
+              className="inv-btn inv-btn-primary"
+              type="submit"
+              disabled={guardando}
+            >
+              {guardando ? "Guardando..." : editandoId ? "Actualizar Producto" : "Crear Producto"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ══ Modal: Confirmar Eliminación ══════════════════ */}
+      <Modal
+        open={modalEliminar}
+        onClose={() => setModalEliminar(false)}
+        titulo="Eliminar Producto"
+        size="sm"
+      >
+        <div className="inv-confirm">
+          <div className="inv-confirm-icon">🗑️</div>
+          <p className="inv-confirm-text">
+            ¿Estás seguro que deseas eliminar{" "}
+            <strong>{productoSeleccionado?.nombre}</strong>?
+            <br />
+            <span className="nt-muted">Esta acción no se puede deshacer.</span>
+          </p>
+          <div className="inv-form-actions" style={{ width: "100%", borderTop: "none", paddingTop: 0 }}>
+            <button
+              className="inv-btn inv-btn-ghost"
+              type="button"
+              onClick={() => setModalEliminar(false)}
+              disabled={guardando}
+            >
+              Cancelar
+            </button>
+            <button
+              className="inv-btn inv-btn-danger"
+              type="button"
+              onClick={confirmarEliminar}
+              disabled={guardando}
+            >
+              {guardando ? "Eliminando..." : "Sí, eliminar"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ══ Modal: Gestionar Categorías ═══════════════════ */}
+      <Modal
+        open={modalCategorias}
+        onClose={cerrarModalCategorias}
+        titulo="Gestionar Categorías"
+        size="md"
+      >
+        <div className="inv-cats">
+          {error && (
+            <div className="nt-alert nt-alert-error">
+              {error}
+              <button className="inv-alert-close" type="button" onClick={() => setError("")}>✕</button>
+            </div>
+          )}
+          {mensaje && (
+            <div className="nt-alert nt-alert-success">
+              {mensaje}
+              <button className="inv-alert-close" type="button" onClick={() => setMensaje("")}>✕</button>
+            </div>
+          )}
+
+          {esAdmin && (
+            <form className="inv-barcode-row" onSubmit={manejarCrearCategoria}>
+              <input
+                className="nt-field inv-grow"
+                placeholder="Nueva categoría (ej: cargadores)"
+                value={nuevaCategoria}
+                onChange={(e) => setNuevaCategoria(e.target.value)}
+              />
+              <button className="inv-btn inv-btn-primary" type="submit">
+                + Agregar
+              </button>
+            </form>
+          )}
+
+          <div className="inv-cats-list">
+            {categorias.map((cat) => (
+              <div key={cat.id} className="inv-cat-item">
+                {renombrandoCategoria?.id === cat.id ? (
+                  <form
+                    className="inv-barcode-row inv-grow"
+                    onSubmit={confirmarRenombrado}
+                  >
+                    <input
+                      className="nt-field inv-grow"
+                      value={nuevoNombreCategoria}
+                      onChange={(e) => setNuevoNombreCategoria(e.target.value)}
+                      autoFocus
+                    />
+                    <button className="inv-btn inv-btn-primary inv-btn-sm" type="submit">
+                      ✓
+                    </button>
+                    <button
+                      className="inv-btn inv-btn-ghost inv-btn-sm"
+                      type="button"
+                      onClick={() => setRenombrandoCategoria(null)}
+                    >
+                      ✕
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <span className="nt-pill inv-cat-nombre">{cat.nombre}</span>
+                    <div className="inv-cat-actions">
+                      <button
+                        className="inv-btn inv-btn-ghost inv-btn-sm"
+                        type="button"
+                        onClick={() => iniciarRenombrado(cat)}
+                        disabled={!esAdmin}
+                      >
+                        Renombrar
+                      </button>
+                      <button
+                        className="inv-btn inv-btn-danger inv-btn-sm"
+                        type="button"
+                        onClick={() => manejarEliminarCategoria(cat)}
+                        disabled={!esAdmin || cat.nombre === "general"}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+            {categorias.length === 0 && (
+              <p className="nt-muted">No hay categorías creadas.</p>
+            )}
+          </div>
+        </div>
+      </Modal>
+    </AppShell>
+  );
+}

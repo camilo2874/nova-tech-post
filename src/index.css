@@ -1,0 +1,7 @@
+/* Base mínima: el tema principal vive en src/styles/nova.css */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}

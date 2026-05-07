@@ -1,0 +1,261 @@
+/* Apertura de turno — una sola superficie, alineada con nt-card (claro / oscuro) */
+
+.caja-ap-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-bottom: 0.5rem;
+}
+
+.caja-ap-card {
+  overflow: hidden;
+}
+
+.caja-ap-card-head {
+  margin-bottom: 1.35rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--nt-border);
+}
+
+.caja-ap-card-head h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--nt-text-strong);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.caja-ap-lead {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--nt-muted);
+  line-height: 1.55;
+  max-width: 36rem;
+}
+
+.caja-ap-meta {
+  display: block;
+  margin-top: 0.65rem;
+  font-size: 0.8125rem;
+  color: var(--nt-muted);
+}
+
+/* Resumen en una sola banda — sin repetir contenido fuera del formulario */
+.caja-ap-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-bottom: 1.35rem;
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-sm, 10px);
+  overflow: hidden;
+}
+
+.caja-ap-sum-cell {
+  padding: 14px 16px;
+  background: var(--nt-surface-2);
+  border-right: 1px solid var(--nt-border);
+}
+
+.caja-ap-sum-cell:last-child {
+  border-right: none;
+}
+
+.caja-ap-sum-lbl {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nt-muted);
+  margin-bottom: 6px;
+}
+
+.caja-ap-sum-val {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--nt-text-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.caja-ap-sum-status {
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--nt-text);
+}
+
+.caja-ap-sum-status[data-tone="ok"] {
+  color: var(--nt-accent-2);
+}
+
+html[data-theme="dark"] .caja-ap-sum-status[data-tone="ok"] {
+  color: var(--nt-accent-2);
+}
+
+.caja-ap-sum-status[data-tone="warn"] {
+  color: var(--nt-warning);
+}
+
+.caja-ap-sum-status[data-tone="muted"] {
+  color: var(--nt-muted);
+  font-weight: 500;
+}
+
+@media (max-width: 560px) {
+  .caja-ap-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .caja-ap-sum-cell {
+    border-right: none;
+    border-bottom: 1px solid var(--nt-border);
+  }
+
+  .caja-ap-sum-cell:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Solo alertas cuando hace falta detalle operativo */
+.caja-ap-callout {
+  border-radius: var(--nt-radius-sm, 10px);
+  padding: 12px 14px;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.52;
+}
+
+.caja-ap-callout[data-variant="neutral"] {
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  color: var(--nt-text);
+}
+
+html[data-theme="dark"] .caja-ap-callout[data-variant="neutral"] {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: rgba(167, 139, 250, 0.24);
+}
+
+.caja-ap-callout[data-variant="success"] {
+  background: rgba(5, 150, 105, 0.08);
+  border: 1px solid rgba(5, 150, 105, 0.28);
+  color: var(--nt-text);
+}
+
+.caja-ap-callout[data-variant="risk"] {
+  background: rgba(217, 119, 6, 0.1);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  color: var(--nt-text);
+}
+
+.caja-ap-callout[data-variant="faltante"] strong,
+.caja-ap-callout[data-variant="sobrante"] strong {
+  color: inherit;
+}
+
+.caja-ap-form-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--nt-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.caja-ap-monto {
+  font-size: 1.375rem !important;
+  font-weight: 650 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.caja-ap-monto--warn {
+  border-color: rgba(217, 119, 6, 0.55) !important;
+}
+
+.caja-ap-monto:focus {
+  border-color: var(--nt-accent) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+html[data-theme="dark"] .caja-ap-monto:focus {
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+}
+
+.caja-ap-diff-wrap {
+  border-radius: var(--nt-radius-sm, 10px);
+  padding: 14px 15px;
+  margin-bottom: 1.1rem;
+  border: 1px solid var(--nt-border);
+  background: var(--nt-surface-2);
+}
+
+.caja-ap-diff-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--nt-warning);
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.caja-ap-tip {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: var(--nt-muted);
+  line-height: 1.45;
+}
+
+.caja-ap-actions {
+  margin-top: 0.35rem;
+}
+
+.caja-ap-actions .nt-btn {
+  width: 100%;
+}
+
+.caja-ap-ring {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  border: 3px solid rgba(37, 99, 235, 0.15);
+  border-top-color: var(--nt-accent);
+  animation: caja-ap-spin 0.85s linear infinite;
+}
+
+html[data-theme="dark"] .caja-ap-ring {
+  border-color: rgba(167, 139, 250, 0.2);
+  border-top-color: var(--nt-accent);
+}
+
+@keyframes caja-ap-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caja-ap-ring {
+    animation: none;
+    border-top-color: transparent;
+    opacity: 0.6;
+  }
+}
+
+/* Carga dentro de la misma línea visual */
+.caja-ap-loading-card {
+  text-align: center;
+  padding: 2.5rem 1.5rem !important;
+}
+
+.caja-ap-loading-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--nt-muted);
+  font-weight: 500;
+}
