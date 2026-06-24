@@ -14,7 +14,7 @@ import {
   registrarVenta,
 } from "../services/ventasServicio";
 import "../styles/pos.css";
-import { abrirCajon, conectarCajon, desconectarCajon, cajonConectado } from "../utils/cajonMonedero";
+import { abrirCajon, conectarCajon, desconectarCajon, cajonConectado, cajonMetodoConexion } from "../utils/cajonMonedero";
 
 /** Evita filtrar por nombre mientras se tipea un código largo solo numérico (se confirma con Enter). */
 function debeBusquedaEnVivoCatalogo(raw) {
@@ -486,15 +486,22 @@ export default function VentasPage() {
   /* ── Cajón monedero ─────────────────────────────────── */
   async function handleConectarCajon() {
     try {
-      if (cajonActivo) {
-        await desconectarCajon();
-        setCajonActivo(false);
+      await conectarCajon();
+      const conectado = cajonConectado();
+      setCajonActivo(conectado);
+      if (!conectado) {
+        setError("No se pudo conectar al cajón. Verifica el puerto o la impresora.");
         return;
       }
-      await conectarCajon();
-      if (cajonConectado()) setCajonActivo(true);
+      // Probar apertura al conectar para confirmar que la impresora responde
+      const prueba = await abrirCajon();
+      if (!prueba.success) {
+        setCajonActivo(false);
+        setError(prueba.message || "El cajón no respondió. Revisa el cable RJ11 y el nombre de la impresora.");
+      }
     } catch (err) {
       setError(err.message);
+      setCajonActivo(false);
     }
   }
 
@@ -536,8 +543,12 @@ export default function VentasPage() {
 
       if (metodoPago === "efectivo" && cajonActivo) {
         abrirCajon()
-          .then((ok) => { if (!ok) setCajonActivo(false); })
-          .catch(() => setCajonActivo(false));
+          .then((result) => {
+            if (!result.success) {
+              console.warn("No se pudo abrir el cajón:", result.message);
+            }
+          })
+          .catch((err) => console.error("Error abriendo cajón:", err));
       }
 
       setModalExito({
@@ -591,16 +602,14 @@ export default function VentasPage() {
               línea{carrito.length !== 1 ? "s" : ""}
             </span>
           )}
-          {"serial" in navigator && (
-            <button
-              className={`nt-btn ${cajonActivo ? "nt-btn-cajon-on" : "nt-btn-ghost"}`}
-              type="button"
-              onClick={handleConectarCajon}
-              title={cajonActivo ? "Cajón conectado — clic para desconectar" : "Conectar cajón monedero"}
-            >
-              🗄 {cajonActivo ? "Cajón ✓" : "Cajón"}
-            </button>
-          )}
+          <button
+            className={`nt-btn ${cajonActivo ? "nt-btn-cajon-on" : "nt-btn-ghost"}`}
+            type="button"
+            onClick={handleConectarCajon}
+            title={cajonActivo ? `Cajón conectado (${cajonMetodoConexion()})` : "Conectar cajón monedero"}
+          >
+            🗄 {cajonActivo ? "Cajón ✓" : "Cajón"}
+          </button>
           <Link className="nt-btn nt-btn-ghost" to="/caja">
             Caja
           </Link>
