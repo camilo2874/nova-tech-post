@@ -51,12 +51,12 @@ function Modal({ onClose, children, wide = false }) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "white",
+          background: "var(--nt-surface)",
           borderRadius: "20px",
           padding: "2rem",
           width: "100%",
           maxWidth: wide ? "680px" : "460px",
-          boxShadow: "0 25px 60px rgba(0,0,0,0.3)",
+          boxShadow: "var(--nt-shadow-lg)",
         }}
       >
         {children}
@@ -110,10 +110,10 @@ function ModalDetalleMovimiento({ movimiento, onClose }) {
             {esVenta ? "🛒" : movimiento.tipo === "ingreso" ? "↓" : "↑"}
           </div>
           <div>
-            <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "#111827" }}>
+            <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "var(--nt-text-strong)" }}>
               {esVenta ? "Detalle de Venta" : movimiento.tipo === "ingreso" ? "Ingreso Manual" : "Retiro de Efectivo"}
             </h3>
-            <p style={{ margin: 0, fontSize: "0.78rem", color: "#6b7280" }}>
+            <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--nt-muted)" }}>
               {new Date(movimiento.creado_en).toLocaleString("es-CO", { dateStyle: "long", timeStyle: "short" })}
             </p>
           </div>
@@ -121,9 +121,9 @@ function ModalDetalleMovimiento({ movimiento, onClose }) {
         <button
           type="button" onClick={onClose}
           style={{
-            background: "#f3f4f6", border: "none", borderRadius: "8px",
+            background: "var(--nt-surface-2)", border: "none", borderRadius: "8px",
             width: "32px", height: "32px", cursor: "pointer", fontSize: "1rem",
-            color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center",
+            color: "var(--nt-muted)", display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >✕</button>
       </div>
@@ -137,7 +137,7 @@ function ModalDetalleMovimiento({ movimiento, onClose }) {
         marginBottom: "1rem",
       }}>
         <div>
-          <div style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600, marginBottom: "4px" }}>
+          <div style={{ fontSize: "0.72rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "4px" }}>
             {movimiento.tipo === "ingreso" ? "MONTO INGRESADO" : "MONTO RETIRADO"}
           </div>
           <div style={{ fontSize: "1.7rem", fontWeight: 800, color: movimiento.tipo === "ingreso" ? "#15803d" : "#b91c1c" }}>
@@ -155,28 +155,28 @@ function ModalDetalleMovimiento({ movimiento, onClose }) {
 
       {/* Info general: quién + referencia */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "1rem" }}>
-        <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "10px 13px" }}>
-          <div style={{ fontSize: "0.7rem", color: "#6b7280", fontWeight: 600, marginBottom: "3px" }}>
+        <div style={{ background: "var(--nt-surface-2)", border: "1px solid var(--nt-border)", borderRadius: "10px", padding: "10px 13px" }}>
+          <div style={{ fontSize: "0.7rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "3px" }}>
             {esVenta ? "ATENDIDO POR" : "REGISTRADO POR"}
           </div>
-          <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#111827" }}>
+          <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--nt-text-strong)" }}>
             {(esVenta ? detalle?.usuarios?.nombre : vendedorMovimiento) ?? "—"}
           </div>
         </div>
         {esVenta && refCorta ? (
-          <div style={{ background: "#f5f3ff", border: "1px solid #c4b5fd", borderRadius: "10px", padding: "10px 13px" }}>
-            <div style={{ fontSize: "0.7rem", color: "#6d28d9", fontWeight: 600, marginBottom: "3px" }}>N° DE FACTURA</div>
-            <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#4c1d95", fontFamily: "monospace" }}>
+          <div style={{ background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.3)", borderRadius: "10px", padding: "10px 13px" }}>
+            <div style={{ fontSize: "0.7rem", color: "var(--nt-accent)", fontWeight: 600, marginBottom: "3px" }}>N° DE FACTURA</div>
+            <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--nt-text-strong)", fontFamily: "monospace" }}>
               #{refCorta}
             </div>
-            <div style={{ fontSize: "0.64rem", color: "#9ca3af", marginTop: "2px", wordBreak: "break-all" }}>
+            <div style={{ fontSize: "0.64rem", color: "var(--nt-muted)", marginTop: "2px", wordBreak: "break-all" }}>
               {ventaId}
             </div>
           </div>
         ) : !esVenta ? (
-          <div style={{ background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "10px 13px" }}>
-            <div style={{ fontSize: "0.7rem", color: "#6b7280", fontWeight: 600, marginBottom: "3px" }}>CONCEPTO</div>
-            <div style={{ fontSize: "0.88rem", fontWeight: 500, color: "#111827" }}>{movimiento.concepto}</div>
+          <div style={{ background: "var(--nt-surface-2)", border: "1px solid var(--nt-border)", borderRadius: "10px", padding: "10px 13px" }}>
+            <div style={{ fontSize: "0.7rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "3px" }}>CONCEPTO</div>
+            <div style={{ fontSize: "0.88rem", fontWeight: 500, color: "var(--nt-text-strong)" }}>{movimiento.concepto}</div>
           </div>
         ) : null}
       </div>
@@ -185,7 +185,7 @@ function ModalDetalleMovimiento({ movimiento, onClose }) {
       {esVenta && (
         <>
           {cargando && (
-            <div style={{ textAlign: "center", padding: "1.5rem", color: "#9ca3af", fontSize: "0.88rem" }}>
+            <div style={{ textAlign: "center", padding: "1.5rem", color: "var(--nt-muted)", fontSize: "0.88rem" }}>
               Cargando productos...
             </div>
           )}
@@ -213,35 +213,35 @@ function ModalDetalleMovimiento({ movimiento, onClose }) {
               </div>
 
               {/* Tabla de productos */}
-              <div style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600, marginBottom: "6px", letterSpacing: "0.03em" }}>
+              <div style={{ fontSize: "0.72rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "6px", letterSpacing: "0.03em" }}>
                 PRODUCTOS VENDIDOS
               </div>
-              <div style={{ border: "1px solid #e5e7eb", borderRadius: "10px", overflow: "hidden", marginBottom: "1rem" }}>
+              <div style={{ border: "1px solid var(--nt-border)", borderRadius: "10px", overflow: "hidden", marginBottom: "1rem" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.83rem" }}>
                   <thead>
-                    <tr style={{ background: "#f9fafb" }}>
+                    <tr style={{ background: "var(--nt-surface-2)" }}>
                       {["Producto", "Código", "Cant.", "Precio unit.", "Subtotal"].map((h) => (
                         <th key={h} style={{
                           textAlign: "left", padding: "8px 11px",
-                          color: "#6b7280", fontWeight: 600, fontSize: "0.74rem",
-                          borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap",
+                          color: "var(--nt-muted)", fontWeight: 600, fontSize: "0.74rem",
+                          borderBottom: "1px solid var(--nt-border)", whiteSpace: "nowrap",
                         }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {(detalle.detalle_venta ?? []).map((d, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? "white" : "#fafafa" }}>
-                        <td style={{ padding: "9px 11px", color: "#111827", fontWeight: 600 }}>
+                      <tr key={i} style={{ background: i % 2 === 0 ? "var(--nt-surface)" : "var(--nt-surface-2)" }}>
+                        <td style={{ padding: "9px 11px", color: "var(--nt-text-strong)", fontWeight: 600 }}>
                           {d.productos?.nombre ?? "—"}
                         </td>
-                        <td style={{ padding: "9px 11px", color: "#6b7280", fontFamily: "monospace", fontSize: "0.78rem" }}>
+                        <td style={{ padding: "9px 11px", color: "var(--nt-muted)", fontFamily: "monospace", fontSize: "0.78rem" }}>
                           {d.productos?.codigo_barras ?? "—"}
                         </td>
-                        <td style={{ padding: "9px 11px", color: "#374151", textAlign: "center", fontWeight: 600 }}>
+                        <td style={{ padding: "9px 11px", color: "var(--nt-text)", textAlign: "center", fontWeight: 600 }}>
                           {d.cantidad}
                         </td>
-                        <td style={{ padding: "9px 11px", color: "#374151" }}>
+                        <td style={{ padding: "9px 11px", color: "var(--nt-text)" }}>
                           {fmt(d.precio_unitario)}
                         </td>
                         <td style={{ padding: "9px 11px", fontWeight: 700, color: "#047857" }}>
@@ -255,12 +255,12 @@ function ModalDetalleMovimiento({ movimiento, onClose }) {
 
               {/* Totales */}
               <div style={{
-                background: "#f8fafc", border: "1px solid #e5e7eb",
+                background: "var(--nt-surface-2)", border: "1px solid var(--nt-border)",
                 borderRadius: "10px", padding: "12px 14px",
                 display: "flex", flexDirection: "column", gap: "7px",
               }}>
                 {Number(detalle.descuento) > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "#6b7280" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--nt-muted)" }}>
                     <span>Subtotal (lista)</span><span>{fmt(detalle.subtotal)}</span>
                   </div>
                 )}
@@ -271,8 +271,8 @@ function ModalDetalleMovimiento({ movimiento, onClose }) {
                 )}
                 <div style={{
                   display: "flex", justifyContent: "space-between",
-                  fontSize: "1.05rem", fontWeight: 800, color: "#111827",
-                  borderTop: Number(detalle.descuento) > 0 ? "2px solid #e5e7eb" : "none",
+                  fontSize: "1.05rem", fontWeight: 800, color: "var(--nt-text-strong)",
+                  borderTop: Number(detalle.descuento) > 0 ? "2px solid var(--nt-border)" : "none",
                   paddingTop: Number(detalle.descuento) > 0 ? "8px" : 0,
                 }}>
                   <span>Total cobrado</span>
@@ -354,10 +354,10 @@ function ModalHistorialGlobal({ onClose }) {
               fontSize: "1.2rem", flexShrink: 0,
             }}>🔎</div>
             <div>
-              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "#111827" }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "var(--nt-text-strong)" }}>
                 Búsqueda Global de Movimientos
               </h3>
-              <p style={{ margin: 0, fontSize: "0.78rem", color: "#6b7280" }}>
+              <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--nt-muted)" }}>
                 Busca en todos los turnos — pasados y activo
               </p>
             </div>
@@ -365,24 +365,24 @@ function ModalHistorialGlobal({ onClose }) {
           <button
             type="button" onClick={onClose}
             style={{
-              background: "#f3f4f6", border: "none", borderRadius: "8px",
+              background: "var(--nt-surface-2)", border: "none", borderRadius: "8px",
               width: "32px", height: "32px", cursor: "pointer", fontSize: "1rem",
-              color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--nt-muted)", display: "flex", alignItems: "center", justifyContent: "center",
             }}
           >✕</button>
         </div>
 
         {/* Filtros */}
         <div style={{
-          background: "#f8fafc", border: "1px solid #e5e7eb",
+          background: "var(--nt-surface-2)", border: "1px solid var(--nt-border)",
           borderRadius: "12px", padding: "14px",
           display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "1rem",
         }}>
           {/* Búsqueda texto */}
           <div style={{ flex: "1 1 180px" }}>
-            <label style={{ display: "block", fontSize: "0.74rem", color: "#6b7280", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>BUSCAR</label>
+            <label style={{ display: "block", fontSize: "0.74rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>BUSCAR</label>
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.85rem", color: "#9ca3af" }}>🔍</span>
+              <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.85rem", color: "var(--nt-muted)" }}>🔍</span>
               <input
                 className="nt-field"
                 placeholder="Concepto o producto..."
@@ -396,7 +396,7 @@ function ModalHistorialGlobal({ onClose }) {
 
           {/* Tipo */}
           <div style={{ flex: "0 0 135px" }}>
-            <label style={{ display: "block", fontSize: "0.74rem", color: "#6b7280", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>TIPO</label>
+            <label style={{ display: "block", fontSize: "0.74rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>TIPO</label>
             <select className="nt-field" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} style={{ fontSize: "0.85rem" }}>
               <option value="todos">Todos</option>
               <option value="ingreso">Solo ingresos</option>
@@ -406,13 +406,13 @@ function ModalHistorialGlobal({ onClose }) {
 
           {/* Fecha desde */}
           <div style={{ flex: "0 0 150px" }}>
-            <label style={{ display: "block", fontSize: "0.74rem", color: "#6b7280", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>DESDE</label>
+            <label style={{ display: "block", fontSize: "0.74rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>DESDE</label>
             <input className="nt-field" type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} style={{ fontSize: "0.85rem" }} />
           </div>
 
           {/* Fecha hasta */}
           <div style={{ flex: "0 0 150px" }}>
-            <label style={{ display: "block", fontSize: "0.74rem", color: "#6b7280", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>HASTA</label>
+            <label style={{ display: "block", fontSize: "0.74rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>HASTA</label>
             <input className="nt-field" type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} style={{ fontSize: "0.85rem" }} />
           </div>
 
@@ -439,7 +439,7 @@ function ModalHistorialGlobal({ onClose }) {
 
         {/* Estado inicial — sin búsqueda */}
         {resultados === null && !cargando && (
-          <div style={{ textAlign: "center", padding: "2.5rem", color: "#9ca3af" }}>
+          <div style={{ textAlign: "center", padding: "2.5rem", color: "var(--nt-muted)" }}>
             <div style={{ fontSize: "2rem", marginBottom: "10px" }}>🔎</div>
             <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 500 }}>
               Aplica filtros y pulsa <strong>Buscar</strong>
@@ -452,7 +452,7 @@ function ModalHistorialGlobal({ onClose }) {
 
         {/* Sin resultados */}
         {resultados?.length === 0 && (
-          <div style={{ textAlign: "center", padding: "2rem", color: "#9ca3af" }}>
+          <div style={{ textAlign: "center", padding: "2rem", color: "var(--nt-muted)" }}>
             <div style={{ fontSize: "1.8rem", marginBottom: "8px" }}>📭</div>
             <p style={{ margin: 0, fontSize: "0.88rem" }}>Ningún movimiento coincide con los filtros</p>
           </div>
@@ -464,26 +464,26 @@ function ModalHistorialGlobal({ onClose }) {
             {/* Mini resumen */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "1rem" }}>
               {[
-                { label: "Resultados", value: resultados.length, color: "#374151", bg: "#f8fafc", border: "#e2e8f0" },
+                { label: "Resultados", value: resultados.length, color: "var(--nt-text)", bg: "var(--nt-surface-2)", border: "var(--nt-border)" },
                 { label: "Total ingresos", value: fmt(totalResultados.ingresos), color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
                 { label: "Total retiros", value: fmt(totalResultados.retiros), color: "#b91c1c", bg: "#fef2f2", border: "#fecaca" },
               ].map((s) => (
                 <div key={s.label} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: "10px", padding: "10px 13px", display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span style={{ fontSize: "0.74rem", color: "#6b7280" }}>{s.label}</span>
+                  <span style={{ fontSize: "0.74rem", color: "var(--nt-muted)" }}>{s.label}</span>
                   <span style={{ fontWeight: 700, color: s.color, fontSize: "0.95rem" }}>{s.value}</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ maxHeight: "320px", overflowY: "auto", borderRadius: "10px", border: "1px solid #f3f4f6" }}>
+            <div style={{ maxHeight: "320px", overflowY: "auto", borderRadius: "10px", border: "1px solid var(--nt-border)" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.83rem" }}>
-                <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 1 }}>
+                <thead style={{ position: "sticky", top: 0, background: "var(--nt-surface-2)", zIndex: 1 }}>
                   <tr>
                     {["", "Tipo", "Monto", "Concepto / Producto", "Turno", "Fecha", ""].map((h) => (
                       <th key={h} style={{
                         textAlign: "left", padding: "9px 11px",
-                        color: "#6b7280", fontWeight: 600, fontSize: "0.74rem",
-                        borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap",
+                        color: "var(--nt-muted)", fontWeight: 600, fontSize: "0.74rem",
+                        borderBottom: "1px solid var(--nt-border)", whiteSpace: "nowrap",
                       }}>{h}</th>
                     ))}
                   </tr>
@@ -501,9 +501,9 @@ function ModalHistorialGlobal({ onClose }) {
                       <tr
                         key={m.id}
                         onClick={() => setMovSeleccionado(m)}
-                        style={{ background: i % 2 === 0 ? "white" : "#fafafa", cursor: "pointer" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f9ff")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "white" : "#fafafa")}
+                        style={{ background: i % 2 === 0 ? "var(--nt-surface)" : "var(--nt-surface-2)", cursor: "pointer" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--nt-nav-hover)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "var(--nt-surface)" : "var(--nt-surface-2)")}
                       >
                         <td style={{ padding: "9px 11px" }}>
                           <span style={{ fontSize: "0.9rem" }}>{esVenta ? "🛒" : "📝"}</span>
@@ -522,20 +522,20 @@ function ModalHistorialGlobal({ onClose }) {
                           {m.tipo === "retiro" ? "− " : "+ "}{fmt(m.monto)}
                         </td>
                         <td style={{ padding: "9px 11px", maxWidth: "180px" }}>
-                          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#111827", fontSize: "0.83rem" }}>
+                          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--nt-text-strong)", fontSize: "0.83rem" }}>
                             {conceptoTexto}
                           </div>
                           {esVenta && vid && (
-                            <div style={{ fontSize: "0.68rem", color: "#9ca3af", fontFamily: "monospace" }}>#{vid.slice(-8).toUpperCase()}</div>
+                            <div style={{ fontSize: "0.68rem", color: "var(--nt-muted)", fontFamily: "monospace" }}>#{vid.slice(-8).toUpperCase()}</div>
                           )}
                         </td>
-                        <td style={{ padding: "9px 11px", color: "#6b7280", fontSize: "0.74rem", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "9px 11px", color: "var(--nt-muted)", fontSize: "0.74rem", whiteSpace: "nowrap" }}>
                           {labelTurno(m)}
                         </td>
-                        <td style={{ padding: "9px 11px", color: "#9ca3af", fontSize: "0.74rem", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "9px 11px", color: "var(--nt-muted)", fontSize: "0.74rem", whiteSpace: "nowrap" }}>
                           {new Date(m.creado_en).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </td>
-                        <td style={{ padding: "9px 11px", color: "#9ca3af" }}>›</td>
+                        <td style={{ padding: "9px 11px", color: "var(--nt-muted)" }}>›</td>
                       </tr>
                     );
                   })}
@@ -611,10 +611,10 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
               fontSize: "1.2rem", flexShrink: 0,
             }}>📋</div>
             <div>
-              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "#111827" }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "var(--nt-text-strong)" }}>
                 Historial de Movimientos
               </h3>
-              <p style={{ margin: 0, fontSize: "0.78rem", color: "#6b7280" }}>
+              <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--nt-muted)" }}>
                 {movimientos.length} movimiento{movimientos.length !== 1 ? "s" : ""} · toca uno para ver el detalle
               </p>
             </div>
@@ -622,9 +622,9 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
           <button
             type="button" onClick={onClose}
             style={{
-              background: "#f3f4f6", border: "none", borderRadius: "8px",
+              background: "var(--nt-surface-2)", border: "none", borderRadius: "8px",
               width: "32px", height: "32px", cursor: "pointer", fontSize: "1rem",
-              color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--nt-muted)", display: "flex", alignItems: "center", justifyContent: "center",
             }}
           >✕</button>
         </div>
@@ -648,7 +648,7 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
               borderRadius: "10px", padding: "10px 14px",
               display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
-              <span style={{ fontSize: "0.78rem", color: "#374151" }}>{s.label}</span>
+              <span style={{ fontSize: "0.78rem", color: "var(--nt-text)" }}>{s.label}</span>
               <span style={{ fontWeight: 700, color: s.color, fontSize: "0.95rem" }}>{s.value}</span>
             </div>
           ))}
@@ -656,17 +656,17 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
 
         {/* Filtros */}
         <div style={{
-          background: "#f8fafc", border: "1px solid #e5e7eb",
+          background: "var(--nt-surface-2)", border: "1px solid var(--nt-border)",
           borderRadius: "12px", padding: "12px 14px",
           marginBottom: "1rem", display: "flex", gap: "10px",
           flexWrap: "wrap", alignItems: "flex-end",
         }}>
           <div style={{ flex: "1 1 180px" }}>
-            <label style={{ display: "block", fontSize: "0.74rem", color: "#6b7280", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>
+            <label style={{ display: "block", fontSize: "0.74rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>
               BUSCAR
             </label>
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.85rem", color: "#9ca3af" }}>🔍</span>
+              <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.85rem", color: "var(--nt-muted)" }}>🔍</span>
               <input
                 className="nt-field"
                 placeholder="Concepto o monto..."
@@ -678,7 +678,7 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
           </div>
 
           <div style={{ flex: "0 0 140px" }}>
-            <label style={{ display: "block", fontSize: "0.74rem", color: "#6b7280", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>
+            <label style={{ display: "block", fontSize: "0.74rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>
               TIPO
             </label>
             <select
@@ -694,7 +694,7 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
           </div>
 
           <div style={{ flex: "0 0 160px" }}>
-            <label style={{ display: "block", fontSize: "0.74rem", color: "#6b7280", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>
+            <label style={{ display: "block", fontSize: "0.74rem", color: "var(--nt-muted)", fontWeight: 600, marginBottom: "5px", letterSpacing: "0.03em" }}>
               FECHA
             </label>
             <input
@@ -710,9 +710,9 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
             <button
               type="button" onClick={limpiarFiltros}
               style={{
-                background: "white", border: "1px solid #d1d5db",
+                background: "var(--nt-surface)", border: "1px solid var(--nt-border)",
                 borderRadius: "8px", padding: "7px 14px", cursor: "pointer",
-                fontSize: "0.8rem", color: "#6b7280", fontWeight: 600,
+                fontSize: "0.8rem", color: "var(--nt-muted)", fontWeight: 600,
                 whiteSpace: "nowrap", alignSelf: "flex-end",
               }}
             >✕ Limpiar</button>
@@ -720,7 +720,7 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
         </div>
 
         {hayFiltros && (
-          <p style={{ margin: "0 0 8px", fontSize: "0.78rem", color: "#6b7280" }}>
+          <p style={{ margin: "0 0 8px", fontSize: "0.78rem", color: "var(--nt-muted)" }}>
             {filtrados.length === 0
               ? "No hay movimientos que coincidan"
               : `${filtrados.length} resultado${filtrados.length !== 1 ? "s" : ""} encontrado${filtrados.length !== 1 ? "s" : ""}`}
@@ -729,29 +729,29 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
 
         {/* Tabla */}
         {movimientos.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "2.5rem", color: "#9ca3af" }}>
+          <div style={{ textAlign: "center", padding: "2.5rem", color: "var(--nt-muted)" }}>
             <div style={{ fontSize: "2rem", marginBottom: "10px" }}>📭</div>
             <p style={{ margin: 0, fontSize: "0.88rem" }}>Aún no hay movimientos en este turno</p>
           </div>
         ) : filtrados.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "2rem", color: "#9ca3af" }}>
+          <div style={{ textAlign: "center", padding: "2rem", color: "var(--nt-muted)" }}>
             <div style={{ fontSize: "1.8rem", marginBottom: "8px" }}>🔍</div>
             <p style={{ margin: 0, fontSize: "0.88rem" }}>Ningún movimiento coincide con los filtros</p>
             <button
               type="button" onClick={limpiarFiltros}
-              style={{ marginTop: "10px", background: "none", border: "none", color: "#6d28d9", cursor: "pointer", fontSize: "0.82rem", fontWeight: 600 }}
+              style={{ marginTop: "10px", background: "none", border: "none", color: "var(--nt-accent)", cursor: "pointer", fontSize: "0.82rem", fontWeight: 600 }}
             >Limpiar filtros</button>
           </div>
         ) : (
-          <div style={{ maxHeight: "300px", overflowY: "auto", borderRadius: "10px", border: "1px solid #f3f4f6" }}>
+          <div style={{ maxHeight: "300px", overflowY: "auto", borderRadius: "10px", border: "1px solid var(--nt-border)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84rem" }}>
-              <thead style={{ position: "sticky", top: 0, background: "#f9fafb", zIndex: 1 }}>
+              <thead style={{ position: "sticky", top: 0, background: "var(--nt-surface-2)", zIndex: 1 }}>
                 <tr>
                   {["Origen", "Tipo", "Monto", "Concepto / Producto", "Fecha", ""].map((h) => (
                     <th key={h} style={{
                       textAlign: "left", padding: "9px 12px",
-                      color: "#6b7280", fontWeight: 600, fontSize: "0.76rem",
-                      borderBottom: "1px solid #e5e7eb", whiteSpace: "nowrap",
+                      color: "var(--nt-muted)", fontWeight: 600, fontSize: "0.76rem",
+                      borderBottom: "1px solid var(--nt-border)", whiteSpace: "nowrap",
                     }}>{h}</th>
                   ))}
                 </tr>
@@ -770,12 +770,12 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
                       key={m.id}
                       onClick={() => setMovSeleccionado(m)}
                       style={{
-                        background: i % 2 === 0 ? "white" : "#fafafa",
+                        background: i % 2 === 0 ? "var(--nt-surface)" : "var(--nt-surface-2)",
                         cursor: "pointer",
                         transition: "background 0.1s",
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f9ff")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "white" : "#fafafa")}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--nt-nav-hover)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = i % 2 === 0 ? "var(--nt-surface)" : "var(--nt-surface-2)")}
                     >
                       <td style={{ padding: "10px 12px" }}>
                         <span style={{ fontSize: "1rem" }}>{esVenta ? "🛒" : "📝"}</span>
@@ -797,21 +797,21 @@ function ModalHistorial({ movimientos, resumen, onClose }) {
                         {m.tipo === "retiro" ? "− " : "+ "}{fmt(m.monto)}
                       </td>
                       <td style={{ padding: "10px 12px", maxWidth: "200px" }}>
-                        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#111827", fontWeight: esVenta ? 500 : 400, fontSize: "0.84rem" }}>
+                        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--nt-text-strong)", fontWeight: esVenta ? 500 : 400, fontSize: "0.84rem" }}>
                           {productosTexto}
                         </div>
                         {esVenta && vid && (
-                          <div style={{ fontSize: "0.7rem", color: "#9ca3af", marginTop: "1px", fontFamily: "monospace" }}>
+                          <div style={{ fontSize: "0.7rem", color: "var(--nt-muted)", marginTop: "1px", fontFamily: "monospace" }}>
                             #{vid.slice(-8).toUpperCase()}
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: "10px 12px", color: "#9ca3af", fontSize: "0.76rem", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "10px 12px", color: "var(--nt-muted)", fontSize: "0.76rem", whiteSpace: "nowrap" }}>
                         {new Date(m.creado_en).toLocaleString("es-CO", {
                           day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
                         })}
                       </td>
-                      <td style={{ padding: "10px 12px", color: "#9ca3af" }}>›</td>
+                      <td style={{ padding: "10px 12px", color: "var(--nt-muted)" }}>›</td>
                     </tr>
                   );
                 })}
@@ -1163,13 +1163,13 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
         {/* Stat movimientos */}
         <div style={{
-          background: "white", border: "1px solid #e5e7eb",
+          background: "var(--nt-surface)", border: "1px solid var(--nt-border)",
           borderRadius: "14px", padding: "1rem 1.4rem",
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <div>
-            <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "3px" }}>Movimientos en este turno</div>
-            <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#111827" }}>{rv.total_movimientos}</div>
+            <div style={{ fontSize: "0.75rem", color: "var(--nt-muted)", marginBottom: "3px" }}>Movimientos en este turno</div>
+            <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--nt-text-strong)" }}>{rv.total_movimientos}</div>
           </div>
           <span style={{ fontSize: "2rem", opacity: 0.2 }}>📋</span>
         </div>
@@ -1182,7 +1182,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {[
-              { label: "Saldo Inicial", value: fmt(rv.monto_apertura), color: "#374151", bg: "#f8fafc", border: "#e2e8f0", icon: "💳" },
+              { label: "Saldo Inicial", value: fmt(rv.monto_apertura), color: "var(--nt-text)", bg: "var(--nt-surface-2)", border: "var(--nt-border)", icon: "💳" },
               { label: "Ingresos del Turno", value: `+ ${fmt(rv.total_ingresos)}`, color: "#047857", bg: "#f0fdf4", border: "#bbf7d0", icon: "📈" },
               { label: "Consignaciones / Retiros", value: `- ${fmt(rv.total_retiros)}`, color: "#c2410c", bg: "#fff7ed", border: "#fed7aa", icon: "💸" },
             ].map((row) => (
@@ -1193,24 +1193,24 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
                   <span style={{ fontSize: "0.95rem" }}>{row.icon}</span>
-                  <span style={{ fontSize: "0.88rem", color: "#374151" }}>{row.label}</span>
+                  <span style={{ fontSize: "0.88rem", color: "var(--nt-text)" }}>{row.label}</span>
                 </div>
                 <span style={{ fontWeight: 700, color: row.color, fontSize: "0.95rem" }}>{row.value}</span>
               </div>
             ))}
             <div style={{
-              background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
-              border: "2px solid #8b5cf6", borderRadius: "12px", padding: "13px 15px",
+              background: "rgba(37,99,235,0.08)",
+              border: "2px solid var(--nt-accent)", borderRadius: "12px", padding: "13px 15px",
               display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
                 <span style={{ fontSize: "0.95rem" }}>💵</span>
                 <div>
-                  <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#374151" }}>Efectivo en Caja</div>
-                  <div style={{ fontSize: "0.72rem", color: "#7c3aed" }}>Balance actual esperado</div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--nt-text)" }}>Efectivo en Caja</div>
+                  <div style={{ fontSize: "0.72rem", color: "var(--nt-accent)" }}>Balance actual esperado</div>
                 </div>
               </div>
-              <span style={{ fontSize: "1.35rem", fontWeight: 800, color: "#6d28d9" }}>{fmt(rv.efectivo_en_caja)}</span>
+              <span style={{ fontSize: "1.35rem", fontWeight: 800, color: "var(--nt-accent)" }}>{fmt(rv.efectivo_en_caja)}</span>
             </div>
           </div>
         </div>
@@ -1220,13 +1220,13 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
           type="button"
           onClick={() => setModalActivo("historialGlobal")}
           style={{
-            background: "white", border: "1.5px solid #e5e7eb", borderRadius: "16px",
+            background: "var(--nt-surface)", border: "1.5px solid var(--nt-border)", borderRadius: "16px",
             padding: "1.2rem 1.3rem", cursor: "pointer", display: "flex",
             alignItems: "center", justifyContent: "space-between",
             width: "100%", textAlign: "left", transition: "border-color 0.15s, box-shadow 0.15s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#334155"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(15,23,42,0.1)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--nt-accent)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(37,99,235,0.15)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--nt-border)"; e.currentTarget.style.boxShadow = "none"; }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{
@@ -1236,11 +1236,11 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
               justifyContent: "center", fontSize: "1.1rem", flexShrink: 0,
             }}>🔎</div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "#111827" }}>Historial de movimientos</div>
-              <div style={{ fontSize: "0.76rem", color: "#6b7280", marginTop: "2px" }}>Busca en turnos anteriores</div>
+              <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--nt-text-strong)" }}>Historial de movimientos</div>
+              <div style={{ fontSize: "0.76rem", color: "var(--nt-muted)", marginTop: "2px" }}>Busca en turnos anteriores</div>
             </div>
           </div>
-          <span style={{ color: "#9ca3af", fontSize: "1.1rem" }}>›</span>
+          <span style={{ color: "var(--nt-muted)", fontSize: "1.1rem" }}>›</span>
         </button>
 
         {/* Modal historial global (solo lectura disponible en modo visor) */}
@@ -1539,8 +1539,8 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
       {/* ── Stat: Movimientos totales ── */}
       <div style={{
-        background: "white",
-        border: "1px solid #e5e7eb",
+        background: "var(--nt-surface)",
+        border: "1px solid var(--nt-border)",
         borderRadius: "14px",
         padding: "1rem 1.4rem",
         display: "flex",
@@ -1548,8 +1548,8 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
         justifyContent: "space-between",
       }}>
         <div>
-          <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "3px" }}>Movimientos en este turno</div>
-          <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#111827" }}>{r.total_movimientos}</div>
+          <div style={{ fontSize: "0.75rem", color: "var(--nt-muted)", marginBottom: "3px" }}>Movimientos en este turno</div>
+          <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--nt-text-strong)" }}>{r.total_movimientos}</div>
         </div>
         <span style={{ fontSize: "2rem", opacity: 0.2 }}>📋</span>
       </div>
@@ -1651,7 +1651,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {[
-            { label: "Saldo Inicial", value: fmt(r.monto_apertura), color: "#374151", bg: "#f8fafc", border: "#e2e8f0", icon: "💳" },
+            { label: "Saldo Inicial", value: fmt(r.monto_apertura), color: "var(--nt-text)", bg: "var(--nt-surface-2)", border: "var(--nt-border)", icon: "💳" },
             { label: "Ingresos del Turno", value: `+ ${fmt(r.total_ingresos)}`, color: "#047857", bg: "#f0fdf4", border: "#bbf7d0", icon: "📈" },
             { label: "Consignaciones / Retiros", value: `- ${fmt(r.total_retiros)}`, color: "#c2410c", bg: "#fff7ed", border: "#fed7aa", icon: "💸" },
           ].map((row) => (
@@ -1666,15 +1666,15 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
                 <span style={{ fontSize: "0.95rem" }}>{row.icon}</span>
-                <span style={{ fontSize: "0.88rem", color: "#374151" }}>{row.label}</span>
+                <span style={{ fontSize: "0.88rem", color: "var(--nt-text)" }}>{row.label}</span>
               </div>
               <span style={{ fontWeight: 700, color: row.color, fontSize: "0.95rem" }}>{row.value}</span>
             </div>
           ))}
 
           <div style={{
-            background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
-            border: "2px solid #8b5cf6",
+            background: "rgba(37,99,235,0.08)",
+            border: "2px solid var(--nt-accent)",
             borderRadius: "12px",
             padding: "13px 15px",
             display: "flex",
@@ -1685,11 +1685,11 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
             <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
               <span style={{ fontSize: "0.95rem" }}>💵</span>
               <div>
-                <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#374151" }}>Efectivo en Caja</div>
-                <div style={{ fontSize: "0.72rem", color: "#7c3aed" }}>Balance actual esperado</div>
+                <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--nt-text)" }}>Efectivo en Caja</div>
+                <div style={{ fontSize: "0.72rem", color: "var(--nt-accent)" }}>Balance actual esperado</div>
               </div>
             </div>
-            <span style={{ fontSize: "1.35rem", fontWeight: 800, color: "#6d28d9" }}>{fmt(r.efectivo_en_caja)}</span>
+            <span style={{ fontSize: "1.35rem", fontWeight: 800, color: "var(--nt-accent)" }}>{fmt(r.efectivo_en_caja)}</span>
           </div>
         </div>
       </div>
@@ -1702,13 +1702,13 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
           type="button"
           onClick={() => setModalActivo("historial")}
           style={{
-            background: "white", border: "1.5px solid #e5e7eb", borderRadius: "16px",
+            background: "var(--nt-surface)", border: "1.5px solid var(--nt-border)", borderRadius: "16px",
             padding: "1.2rem 1.3rem", cursor: "pointer", display: "flex",
             alignItems: "center", justifyContent: "space-between",
             width: "100%", textAlign: "left", transition: "border-color 0.15s, box-shadow 0.15s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6d28d9"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(109,40,217,0.1)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--nt-accent)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(37,99,235,0.15)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--nt-border)"; e.currentTarget.style.boxShadow = "none"; }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{
@@ -1718,17 +1718,17 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
               justifyContent: "center", fontSize: "1.1rem", flexShrink: 0,
             }}>📋</div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "#111827" }}>
+              <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--nt-text-strong)" }}>
                 Este turno
               </div>
-              <div style={{ fontSize: "0.76rem", color: "#6b7280", marginTop: "2px" }}>
+              <div style={{ fontSize: "0.76rem", color: "var(--nt-muted)", marginTop: "2px" }}>
                 {movimientos.length === 0
                   ? "Sin movimientos aún"
                   : `${movimientos.length} movimiento${movimientos.length !== 1 ? "s" : ""}`}
               </div>
             </div>
           </div>
-          <span style={{ color: "#9ca3af", fontSize: "1.1rem" }}>›</span>
+          <span style={{ color: "var(--nt-muted)", fontSize: "1.1rem" }}>›</span>
         </button>
 
         {/* Búsqueda global — todos los turnos */}
@@ -1736,13 +1736,13 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
           type="button"
           onClick={() => setModalActivo("historialGlobal")}
           style={{
-            background: "white", border: "1.5px solid #e5e7eb", borderRadius: "16px",
+            background: "var(--nt-surface)", border: "1.5px solid var(--nt-border)", borderRadius: "16px",
             padding: "1.2rem 1.3rem", cursor: "pointer", display: "flex",
             alignItems: "center", justifyContent: "space-between",
             width: "100%", textAlign: "left", transition: "border-color 0.15s, box-shadow 0.15s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#334155"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(15,23,42,0.1)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--nt-accent)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(37,99,235,0.15)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--nt-border)"; e.currentTarget.style.boxShadow = "none"; }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{
@@ -1752,15 +1752,15 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
               justifyContent: "center", fontSize: "1.1rem", flexShrink: 0,
             }}>🔎</div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "#111827" }}>
+              <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--nt-text-strong)" }}>
                 Buscar en todos
               </div>
-              <div style={{ fontSize: "0.76rem", color: "#6b7280", marginTop: "2px" }}>
+              <div style={{ fontSize: "0.76rem", color: "var(--nt-muted)", marginTop: "2px" }}>
                 Busca en turnos anteriores
               </div>
             </div>
           </div>
-          <span style={{ color: "#9ca3af", fontSize: "1.1rem" }}>›</span>
+          <span style={{ color: "var(--nt-muted)", fontSize: "1.1rem" }}>›</span>
         </button>
 
       </div>
@@ -1776,10 +1776,10 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
               justifyContent: "center", fontSize: "1.3rem", flexShrink: 0,
             }}>💰</div>
             <div>
-              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.1rem", color: "#111827" }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.1rem", color: "var(--nt-text-strong)" }}>
                 Ingresar Efectivo
               </h3>
-              <p style={{ margin: 0, fontSize: "0.82rem", color: "#6b7280" }}>
+              <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--nt-muted)" }}>
                 El ingreso quedará registrado con fecha, monto y concepto
               </p>
             </div>
@@ -1791,7 +1791,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <div>
-              <label style={{ display: "block", fontSize: "0.82rem", color: "#374151", fontWeight: 600, marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "0.82rem", color: "var(--nt-text)", fontWeight: 600, marginBottom: "6px" }}>
                 Monto a ingresar *
               </label>
               <input
@@ -1808,7 +1808,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "0.82rem", color: "#374151", fontWeight: 600, marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "0.82rem", color: "var(--nt-text)", fontWeight: 600, marginBottom: "6px" }}>
                 Concepto *
               </label>
               <input
@@ -1860,10 +1860,10 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
               fontSize: "1.3rem", flexShrink: 0,
             }}>💸</div>
             <div>
-              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.1rem", color: "#111827" }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.1rem", color: "var(--nt-text-strong)" }}>
                 Retirar Efectivo
               </h3>
-              <p style={{ margin: 0, fontSize: "0.82rem", color: "#6b7280" }}>
+              <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--nt-muted)" }}>
                 El retiro quedará registrado con fecha y concepto
               </p>
             </div>
@@ -1875,7 +1875,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <div>
-              <label style={{ display: "block", fontSize: "0.82rem", color: "#374151", fontWeight: 600, marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "0.82rem", color: "var(--nt-text)", fontWeight: 600, marginBottom: "6px" }}>
                 Monto a retirar *
               </label>
               <input
@@ -1890,14 +1890,14 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
                 style={{ fontSize: "1.1rem", fontWeight: 700 }}
               />
               {r.efectivo_en_caja > 0 && (
-                <p style={{ margin: "5px 0 0", fontSize: "0.76rem", color: "#6b7280" }}>
+                <p style={{ margin: "5px 0 0", fontSize: "0.76rem", color: "var(--nt-muted)" }}>
                   Disponible en caja: <strong>{fmt(r.efectivo_en_caja)}</strong>
                 </p>
               )}
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "0.82rem", color: "#374151", fontWeight: 600, marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "0.82rem", color: "var(--nt-text)", fontWeight: 600, marginBottom: "6px" }}>
                 Concepto *
               </label>
               <input
@@ -1970,10 +1970,10 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
                     fontSize: "1.3rem", flexShrink: 0,
                   }}>🔒</div>
                   <div>
-                    <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.1rem", color: "#111827" }}>
+                    <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.1rem", color: "var(--nt-text-strong)" }}>
                       Cerrar Turno de Caja
                     </h3>
-                    <p style={{ margin: 0, fontSize: "0.82rem", color: "#6b7280" }}>
+                    <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--nt-muted)" }}>
                       Esta acción no se puede deshacer
                     </p>
                   </div>
@@ -1981,15 +1981,15 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
                 {/* Saldo del sistema */}
                 <div style={{
-                  background: "linear-gradient(135deg, #f5f3ff, #ede9fe)",
-                  border: "1.5px solid #c4b5fd",
+                  background: "rgba(37,99,235,0.08)",
+                  border: "1.5px solid rgba(37,99,235,0.35)",
                   borderRadius: "12px", padding: "13px 16px", margin: "1rem 0",
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                 }}>
                   <div>
-                    <div style={{ fontSize: "0.76rem", color: "#7c3aed", fontWeight: 600 }}>EFECTIVO ESPERADO EN CAJA</div>
-                    <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#4c1d95" }}>{fmt(r.efectivo_en_caja)}</div>
-                    <div style={{ fontSize: "0.71rem", color: "#7c3aed", marginTop: "2px" }}>
+                    <div style={{ fontSize: "0.76rem", color: "var(--nt-accent)", fontWeight: 600 }}>EFECTIVO ESPERADO EN CAJA</div>
+                    <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--nt-text-strong)" }}>{fmt(r.efectivo_en_caja)}</div>
+                    <div style={{ fontSize: "0.71rem", color: "var(--nt-accent)", marginTop: "2px" }}>
                       Calculado por el sistema
                     </div>
                   </div>
@@ -2003,7 +2003,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                   {/* Conteo físico */}
                   <div>
-                    <label style={{ display: "block", fontSize: "0.82rem", color: "#374151", fontWeight: 600, marginBottom: "6px" }}>
+                    <label style={{ display: "block", fontSize: "0.82rem", color: "var(--nt-text)", fontWeight: 600, marginBottom: "6px" }}>
                       Efectivo contado físicamente *
                     </label>
                     <input
@@ -2044,7 +2044,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
                               <p style={{ margin: "0 0 3px", fontWeight: 700, color: "#b91c1c", fontSize: "0.9rem" }}>
                                 FALTANTE: {fmt(Math.abs(diferencia))}
                               </p>
-                              <p style={{ margin: 0, fontSize: "0.78rem", color: "#6b7280" }}>
+                              <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--nt-muted)" }}>
                                 El sistema registra {fmt(r.efectivo_en_caja)} pero se contaron {fmt(contado)}.
                                 Se requiere una observación obligatoria para identificar al responsable del descuadre.
                               </p>
@@ -2055,7 +2055,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
                               <p style={{ margin: "0 0 3px", fontWeight: 700, color: "#92400e", fontSize: "0.9rem" }}>
                                 SOBRANTE: {fmt(diferencia)}
                               </p>
-                              <p style={{ margin: 0, fontSize: "0.78rem", color: "#6b7280" }}>
+                              <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--nt-muted)" }}>
                                 Hay más dinero del esperado. Registra en las observaciones el motivo.
                               </p>
                             </>
@@ -2067,7 +2067,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
                   {/* Observaciones — obligatorias si hay descuadre */}
                   <div>
-                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: "6px", color: hayDescuadre ? "#b91c1c" : "#374151" }}>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 600, marginBottom: "6px", color: hayDescuadre ? "#b91c1c" : "var(--nt-text)" }}>
                       {hayDescuadre ? "⚠️ Observación de descuadre *" : "Notas de cierre (opcional)"}
                     </label>
                     <input
@@ -2085,7 +2085,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
                       </p>
                     )}
                     {hayDescuadre && cierreNotas.trim() && (
-                      <p style={{ margin: "5px 0 0", fontSize: "0.75rem", color: "#6b7280" }}>
+                      <p style={{ margin: "5px 0 0", fontSize: "0.75rem", color: "var(--nt-muted)" }}>
                         Esta nota quedará registrada en el sistema para auditoría.
                       </p>
                     )}

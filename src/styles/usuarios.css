@@ -90,7 +90,7 @@ html[data-theme="dark"] .usr-stat-green  { background: linear-gradient(135deg, #
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--nt-accent), #7c3aed);
+  background: linear-gradient(135deg, var(--nt-accent-solid), var(--nt-secondary));
   color: #fff;
   display: grid;
   place-items: center;
@@ -118,8 +118,8 @@ html[data-theme="dark"] .usr-stat-green  { background: linear-gradient(135deg, #
 }
 
 html[data-theme="dark"] .usr-you-badge {
-  background: rgba(167, 139, 250, 0.2);
-  color: #c4b5fd;
+  background: rgba(96, 165, 250, 0.2);
+  color: #93c5fd;
 }
 
 .usr-email {
@@ -649,8 +649,8 @@ html:not([data-theme="dark"]) .prf-avatar-ring::after {
 }
 
 html[data-theme="dark"] .prf-input:focus {
-  border-color: rgba(167, 139, 250, 0.55);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+  border-color: rgba(96, 165, 250, 0.55);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.22);
 }
 
 .prf-input:disabled { opacity: 0.5; cursor: not-allowed; }

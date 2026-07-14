@@ -190,13 +190,13 @@ html[data-theme="dark"] .inv-stat-purple { background: linear-gradient(135deg, #
 }
 
 html[data-theme="dark"] .inv-btn-edit {
-  background: rgba(167, 139, 250, 0.08);
+  background: rgba(96, 165, 250, 0.08);
   color: var(--nt-accent);
-  border-color: rgba(167, 139, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.2);
 }
 
 html[data-theme="dark"] .inv-btn-edit:not(:disabled):hover {
-  background: rgba(167, 139, 250, 0.16);
+  background: rgba(96, 165, 250, 0.16);
 }
 
 .inv-btn-delete {
@@ -276,18 +276,14 @@ html[data-theme="dark"] .inv-btn-edit:not(:disabled):hover {
 
 html[data-theme="dark"] .inv-prod-cat {
   color: var(--nt-accent);
-  background: rgba(167, 139, 250, 0.14);
+  background: rgba(96, 165, 250, 0.14);
 }
 
 .inv-prod-precio-wrap {
-  background: linear-gradient(135deg, var(--nt-accent) 0%, var(--nt-accent-hover, #1d4ed8) 100%);
+  background: linear-gradient(135deg, var(--nt-accent-solid) 0%, var(--nt-accent-solid-hover) 100%);
   border-radius: var(--nt-radius-sm);
   padding: 0.6rem 1rem;
   color: #fff;
-}
-
-html[data-theme="dark"] .inv-prod-precio-wrap {
-  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
 }
 
 .inv-prod-precio-label {

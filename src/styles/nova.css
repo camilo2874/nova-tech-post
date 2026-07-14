@@ -12,44 +12,49 @@ html {
   --nt-radius-sm: 10px;
 
   /* Claro: mejor lectura y contraste (menos “lavado”) */
-  --nt-bg: #e4e9f2;
-  --nt-bg-blob-1: rgba(37, 99, 235, 0.09);
-  --nt-bg-blob-2: rgba(5, 150, 105, 0.07);
+  --nt-bg: #eef2f8;
+  --nt-bg-blob-1: rgba(37, 99, 235, 0.08);
+  --nt-bg-blob-2: rgba(5, 150, 105, 0.06);
   --nt-sidebar-bg: #ffffff;
-  --nt-sidebar-border: rgba(15, 23, 42, 0.09);
+  --nt-sidebar-border: rgba(15, 23, 42, 0.08);
   --nt-main-surface: transparent;
 
   --nt-surface: #ffffff;
   --nt-surface-2: #f1f5f9;
-  --nt-border: rgba(15, 23, 42, 0.11);
-  --nt-text: #1e293b;
+  --nt-border: rgba(15, 23, 42, 0.1);
+  --nt-text: #334155;
   --nt-text-strong: #0f172a;
   --nt-muted: #64748b;
 
+  /* Acento único de marca (azul) — se mantiene igual en claro y oscuro */
   --nt-accent: #2563eb;
   --nt-accent-hover: #1d4ed8;
+  --nt-accent-solid: #2563eb;
+  --nt-accent-solid-hover: #1d4ed8;
+  /* Secundarios decorativos (degradados de marca, badges de categoría) */
   --nt-accent-2: #059669;
+  --nt-secondary: #7c3aed;
   --nt-danger: #dc2626;
   --nt-warning: #d97706;
 
-  --nt-nav-hover: rgba(37, 99, 235, 0.08);
+  --nt-nav-hover: rgba(37, 99, 235, 0.07);
   --nt-nav-active-bg: rgba(37, 99, 235, 0.12);
   --nt-nav-active-text: #1d4ed8;
 
-  --nt-shadow: 0 10px 36px rgba(15, 23, 42, 0.11);
-  --nt-shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.16);
+  --nt-shadow: 0 10px 36px rgba(15, 23, 42, 0.1);
+  --nt-shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.15);
 
   --nt-card-bg: #ffffff;
-  --nt-card-shadow: 0 10px 36px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(15, 23, 42, 0.06);
+  --nt-card-shadow: 0 10px 36px rgba(15, 23, 42, 0.09), 0 2px 8px rgba(15, 23, 42, 0.05);
   --nt-field-bg: #ffffff;
   --nt-table-bg: #ffffff;
-  --nt-table-header-bg: #e8eef5;
+  --nt-table-header-bg: #eef2f8;
 
   --nt-clock-bg: #f8fafc;
-  --nt-clock-border: rgba(37, 99, 235, 0.22);
+  --nt-clock-border: rgba(37, 99, 235, 0.2);
   --nt-clock-time: #1d4ed8;
 
-  --nt-link: #5b21b6;
+  --nt-link: #1d4ed8;
   --nt-alert-error-fg: #7f1d1d;
   --nt-alert-success-fg: #14532d;
 }
@@ -57,44 +62,49 @@ html {
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --nt-bg: #0c0e14;
-  --nt-bg-blob-1: rgba(124, 58, 237, 0.18);
-  --nt-bg-blob-2: rgba(34, 197, 94, 0.1);
-  --nt-sidebar-bg: #11141c;
-  --nt-sidebar-border: rgba(255, 255, 255, 0.07);
+  /* Oscuro "slate" refinado — menos negro puro, menos fatiga visual */
+  --nt-bg: #0c0f16;
+  --nt-bg-blob-1: rgba(59, 130, 246, 0.16);
+  --nt-bg-blob-2: rgba(16, 185, 129, 0.09);
+  --nt-sidebar-bg: #10131c;
+  --nt-sidebar-border: rgba(148, 163, 184, 0.1);
   --nt-main-surface: transparent;
 
-  --nt-surface: #12151c;
-  --nt-surface-2: #171b24;
-  --nt-border: rgba(255, 255, 255, 0.1);
-  --nt-text: rgba(255, 255, 255, 0.78);
-  --nt-text-strong: rgba(255, 255, 255, 0.94);
-  --nt-muted: rgba(255, 255, 255, 0.52);
+  --nt-surface: #131722;
+  --nt-surface-2: #1a1f2b;
+  --nt-border: rgba(148, 163, 184, 0.14);
+  --nt-text: rgba(226, 232, 240, 0.82);
+  --nt-text-strong: #f1f5f9;
+  --nt-muted: rgba(148, 163, 184, 0.72);
 
-  --nt-accent: #a78bfa;
-  --nt-accent-hover: #c4b5fd;
+  /* Mismo acento azul que en claro, en un tono más claro para legibilidad */
+  --nt-accent: #60a5fa;
+  --nt-accent-hover: #93c5fd;
+  --nt-accent-solid: #2563eb;
+  --nt-accent-solid-hover: #1d4ed8;
   --nt-accent-2: #34d399;
+  --nt-secondary: #a78bfa;
   --nt-danger: #fb7185;
   --nt-warning: #fbbf24;
 
-  --nt-nav-hover: rgba(255, 255, 255, 0.06);
-  --nt-nav-active-bg: rgba(124, 58, 237, 0.22);
-  --nt-nav-active-text: #e9d5ff;
+  --nt-nav-hover: rgba(255, 255, 255, 0.05);
+  --nt-nav-active-bg: rgba(59, 130, 246, 0.18);
+  --nt-nav-active-text: #93c5fd;
 
-  --nt-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
-  --nt-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --nt-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --nt-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
 
-  --nt-card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  --nt-card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
   --nt-card-shadow: var(--nt-shadow);
-  --nt-field-bg: rgba(0, 0, 0, 0.22);
-  --nt-table-bg: rgba(0, 0, 0, 0.15);
-  --nt-table-header-bg: rgba(18, 21, 28, 0.95);
+  --nt-field-bg: rgba(255, 255, 255, 0.035);
+  --nt-table-bg: rgba(255, 255, 255, 0.02);
+  --nt-table-header-bg: rgba(19, 22, 31, 0.92);
 
   --nt-clock-bg: rgba(255, 255, 255, 0.04);
-  --nt-clock-border: rgba(167, 139, 250, 0.35);
-  --nt-clock-time: #c4b5fd;
+  --nt-clock-border: rgba(96, 165, 250, 0.32);
+  --nt-clock-time: #93c5fd;
 
-  --nt-link: rgba(196, 181, 253, 0.95);
+  --nt-link: #93c5fd;
   --nt-alert-error-fg: rgba(255, 255, 255, 0.92);
   --nt-alert-success-fg: rgba(255, 255, 255, 0.92);
 }
@@ -209,7 +219,7 @@ html[data-theme="dark"] .nt-sidebar-brand-name {
   height: 3px;
   border-radius: 999px;
   margin: 10px auto 8px;
-  background: linear-gradient(90deg, var(--nt-accent), #7c3aed, var(--nt-accent-2));
+  background: linear-gradient(90deg, var(--nt-accent), var(--nt-secondary), var(--nt-accent-2));
 }
 
 .nt-sidebar-tagline {
@@ -286,7 +296,7 @@ html[data-theme="dark"] .nt-sidebar-clock {
 }
 
 html[data-theme="dark"] .nt-sidebar-link.is-active {
-  border-color: rgba(167, 139, 250, 0.35);
+  border-color: rgba(96, 165, 250, 0.35);
 }
 
 .nt-sidebar-link svg {
@@ -415,7 +425,7 @@ html[data-theme="dark"] .nt-sidebar-link.is-active {
   font-weight: 800;
   font-size: 14px;
   color: white;
-  background: linear-gradient(135deg, var(--nt-accent), #7c3aed);
+  background: linear-gradient(135deg, var(--nt-accent-solid), var(--nt-secondary));
   flex-shrink: 0;
 }
 
@@ -564,8 +574,8 @@ html[data-theme="dark"] .nt-sidebar-link.is-active {
 }
 
 html[data-theme="dark"] .nt-field:focus {
-  border-color: rgba(167, 139, 250, 0.55);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+  border-color: rgba(96, 165, 250, 0.55);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.22);
 }
 
 .nt-btn {
@@ -596,16 +606,14 @@ html[data-theme="dark"] .nt-field:focus {
 
 .nt-btn-primary {
   border-color: rgba(37, 99, 235, 0.42);
-  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+  background: linear-gradient(180deg, var(--nt-accent-solid), var(--nt-accent-solid-hover));
   color: #fff;
   box-shadow: 0 10px 28px rgba(37, 99, 235, 0.22);
 }
 
 html[data-theme="dark"] .nt-btn-primary {
-  border-color: rgba(167, 139, 250, 0.45);
-  background: linear-gradient(180deg, rgba(124, 58, 237, 0.95), rgba(109, 40, 217, 0.88));
-  color: #fff;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.28), 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
 .nt-btn-primary:hover:not(:disabled) {
@@ -691,9 +699,9 @@ html[data-theme="dark"] .nt-table-wrap {
 }
 
 html[data-theme="dark"] .nt-pill-strong {
-  background: rgba(124, 58, 237, 0.22);
-  border-color: rgba(167, 139, 250, 0.35);
-  color: var(--nt-text-strong);
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(96, 165, 250, 0.32);
+  color: #bfdbfe;
 }
 
 .nt-alert {
@@ -751,7 +759,7 @@ html[data-theme="dark"] .nt-alert-success {
 }
 
 html[data-theme="dark"] .nt-kpi-accent .nt-kpi-value {
-  color: #c4b5fd;
+  color: #93c5fd;
 }
 
 .nt-auth {
@@ -790,7 +798,7 @@ html[data-theme="dark"] .nt-kpi-accent .nt-kpi-value {
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
-  background: #0a0d16;
+  background: #0c0f16;
 }
 
 html:not([data-theme="dark"]) .nt-login-bg {
@@ -942,7 +950,7 @@ html:not([data-theme="dark"]) .nt-login-card {
   position: absolute;
   inset: 4px;
   border-radius: 50%;
-  background: #0a0d16;
+  background: #0c0f16;
 }
 
 html:not([data-theme="dark"]) .nt-login-logo-ring::after {
@@ -1076,8 +1084,8 @@ html:not([data-theme="dark"]) .nt-login-label {
 
 .nt-login-field:focus {
   background: rgba(255,255,255,0.1);
-  border-color: rgba(99, 102, 241, 0.7);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18), 0 0 20px rgba(99, 102, 241, 0.12);
+  border-color: rgba(96, 165, 250, 0.7);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18), 0 0 20px rgba(59, 130, 246, 0.12);
 }
 
 html:not([data-theme="dark"]) .nt-login-field {

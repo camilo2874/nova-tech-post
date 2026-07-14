@@ -136,8 +136,8 @@ html[data-theme="dark"] .caja-ap-sum-status[data-tone="ok"] {
 }
 
 html[data-theme="dark"] .caja-ap-callout[data-variant="neutral"] {
-  background: rgba(124, 58, 237, 0.1);
-  border-color: rgba(167, 139, 250, 0.24);
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(96, 165, 250, 0.26);
 }
 
 .caja-ap-callout[data-variant="success"] {
@@ -183,7 +183,7 @@ html[data-theme="dark"] .caja-ap-callout[data-variant="neutral"] {
 }
 
 html[data-theme="dark"] .caja-ap-monto:focus {
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
 }
 
 .caja-ap-diff-wrap {
@@ -229,7 +229,7 @@ html[data-theme="dark"] .caja-ap-monto:focus {
 }
 
 html[data-theme="dark"] .caja-ap-ring {
-  border-color: rgba(167, 139, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.2);
   border-top-color: var(--nt-accent);
 }
 
