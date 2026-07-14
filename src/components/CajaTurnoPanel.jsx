@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   abrirCaja,
   buscarMovimientosGlobales,
@@ -843,6 +843,9 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
   const [cargando, setCargando] = useState(true);
   const [errorLocal, setErrorLocal] = useState("");
   const [procesando, setProcesando] = useState(false);
+  /** Candado sincrónico anti doble-envío (mismo patrón que VentasPage): evita que un doble
+   * clic/Enter dispare la acción dos veces antes de que React deshabilite el botón. */
+  const accionEnCursoRef = useRef(false);
 
   // Apertura
   const [montoApertura, setMontoApertura] = useState("0");
@@ -948,7 +951,9 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
   // ── Acciones ────────────────────────────────────────────────────────────────
   async function manejarAbrir() {
+    if (accionEnCursoRef.current) return;
     if (!usuarioId) return;
+    accionEnCursoRef.current = true;
     setProcesando(true);
     setErrorLocal("");
     try {
@@ -962,12 +967,15 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
     } catch (err) {
       setErrorLocal(err.message);
     } finally {
+      accionEnCursoRef.current = false;
       setProcesando(false);
     }
   }
 
   async function manejarRetiro() {
+    if (accionEnCursoRef.current) return;
     if (!usuarioId || !caja?.id) return;
+    accionEnCursoRef.current = true;
     setProcesando(true);
     setErrorLocal("");
     try {
@@ -981,12 +989,15 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
     } catch (err) {
       setErrorLocal(err.message);
     } finally {
+      accionEnCursoRef.current = false;
       setProcesando(false);
     }
   }
 
   async function manejarIngreso() {
+    if (accionEnCursoRef.current) return;
     if (!usuarioId || !caja?.id) return;
+    accionEnCursoRef.current = true;
     setProcesando(true);
     setErrorLocal("");
     try {
@@ -1000,12 +1011,15 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
     } catch (err) {
       setErrorLocal(err.message);
     } finally {
+      accionEnCursoRef.current = false;
       setProcesando(false);
     }
   }
 
   async function manejarCerrar() {
+    if (accionEnCursoRef.current) return;
     if (!usuarioId || !caja?.id) return;
+    accionEnCursoRef.current = true;
     setProcesando(true);
     setErrorLocal("");
     try {
@@ -1019,6 +1033,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
     } catch (err) {
       setErrorLocal(err.message);
     } finally {
+      accionEnCursoRef.current = false;
       setProcesando(false);
     }
   }

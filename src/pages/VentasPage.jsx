@@ -14,7 +14,7 @@ import {
   registrarVenta,
 } from "../services/ventasServicio";
 import "../styles/pos.css";
-import { abrirCajon, conectarCajon, desconectarCajon, cajonConectado, cajonMetodoConexion } from "../utils/cajonMonedero";
+import { abrirCajon, conectarCajon, detectarCajon, cajonMetodoConexion } from "../utils/cajonMonedero";
 
 /** Evita filtrar por nombre mientras se tipea un código largo solo numérico (se confirma con Enter). */
 function debeBusquedaEnVivoCatalogo(raw) {
@@ -158,6 +158,9 @@ export default function VentasPage() {
   const [modalExito, setModalExito] = useState(null);
   const [montoRecibido, setMontoRecibido] = useState("");
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
+  /** Candado sincrónico anti doble-envío: `procesando` (estado) se actualiza en el próximo render,
+   * lo cual deja una ventana breve donde un doble clic/Enter podría disparar el cobro dos veces. */
+  const cobrandoRef = useRef(false);
   const [cajonActivo, setCajonActivo] = useState(false);
   /** Borrador por línea para poder borrar el campo y escribir otra cantidad sin que el input «rebote». */
   const [cantidadBorrador, setCantidadBorrador] = useState({});
@@ -193,6 +196,10 @@ export default function VentasPage() {
   useEffect(() => {
     setMontoRecibido("");
   }, [metodoPago]);
+
+  useEffect(() => {
+    detectarCajon().then((ok) => setCajonActivo(ok));
+  }, []);
 
   const limpiarError = useCallback(() => setError(""), []);
 
@@ -486,18 +493,12 @@ export default function VentasPage() {
   /* ── Cajón monedero ─────────────────────────────────── */
   async function handleConectarCajon() {
     try {
-      await conectarCajon();
-      const conectado = cajonConectado();
-      setCajonActivo(conectado);
-      if (!conectado) {
-        setError("No se pudo conectar al cajón. Verifica el puerto o la impresora.");
-        return;
-      }
-      // Probar apertura al conectar para confirmar que la impresora responde
-      const prueba = await abrirCajon();
-      if (!prueba.success) {
-        setCajonActivo(false);
-        setError(prueba.message || "El cajón no respondió. Revisa el cable RJ11 y el nombre de la impresora.");
+      const ok = await conectarCajon({ probarApertura: true });
+      setCajonActivo(ok);
+      if (!ok) {
+        setError(
+          "No se pudo abrir el cajón. En esta PC ejecuta npm run cajon-bridge y verifica la impresora.",
+        );
       }
     } catch (err) {
       setError(err.message);
@@ -507,6 +508,10 @@ export default function VentasPage() {
 
   /* ── Cobro ────────────────────────────────────────────── */
   async function cobrarVenta() {
+    // Candado sincrónico: bloquea un segundo clic/Enter en el mismo tick, antes de que
+    // React re-renderice el botón con `disabled={procesando}`. Evita registrar la venta 2 veces.
+    if (cobrandoRef.current) return;
+
     if (!usuario?.id) {
       setError("No hay sesión activa.");
       return;
@@ -527,6 +532,7 @@ export default function VentasPage() {
       return;
     }
 
+    cobrandoRef.current = true;
     try {
       setProcesando(true);
       limpiarError();
@@ -569,6 +575,7 @@ export default function VentasPage() {
     } catch (err) {
       setError(err.message);
     } finally {
+      cobrandoRef.current = false;
       setProcesando(false);
     }
   }

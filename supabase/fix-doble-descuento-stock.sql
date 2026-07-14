@@ -1,0 +1,70 @@
+-- NOVA TECH — Fix: doble descuento de stock en cada venta
+--
+-- DIAGNÓSTICO (13/jul/2026):
+-- Existía un trigger `trg_detalle_venta_descuenta_stock` sobre `detalle_venta`
+-- (BEFORE INSERT), creado directamente en el dashboard de Supabase (nunca
+-- quedó versionado en este repo), que ejecutaba la función
+-- `descontar_stock_al_vender()` restando `cantidad` de `productos.stock`
+-- por cada línea insertada.
+--
+-- Esa función ERA una implementación antigua/manual del descuento de stock,
+-- previa a la RPC atómica `registrar_venta_pos` (ver
+-- registrar-venta-pos-rpc.sql). Cuando se migró el flujo de ventas a esa RPC
+-- —la cual también inserta en `detalle_venta` Y además hace su propio
+-- `UPDATE productos SET stock = stock - cantidad`— nadie eliminó el trigger
+-- viejo. Resultado: cada venta descontaba el stock DOS VECES (una por el
+-- trigger, otra por la RPC). Por eso vender 1 unidad bajaba el stock en 2,
+-- vender 3 lo bajaba en 6, etc. (el error crecía proporcional a la cantidad
+-- vendida).
+--
+-- FIX APLICADO (13/jul/2026, vía Supabase Studio → Database → Triggers):
+-- Se eliminó el trigger `trg_detalle_venta_descuenta_stock`. El descuento de
+-- stock ahora ocurre EXCLUSIVAMENTE dentro de `registrar_venta_pos`, que ya
+-- lo hace de forma correcta y atómica (agrupa cantidades por producto,
+-- valida stock con bloqueo de fila antes de descontar, todo en una sola
+-- transacción).
+--
+-- Este archivo documenta el cambio y sirve para reproducirlo en otros
+-- entornos (staging, otra instancia del cliente, etc.) donde el mismo
+-- trigger legado pudiera existir.
+
+DROP TRIGGER IF EXISTS trg_detalle_venta_descuenta_stock ON public.detalle_venta;
+DROP FUNCTION IF EXISTS public.descontar_stock_al_vender();
+
+-- Referencia: definición original del trigger/función eliminados (por si se
+-- necesita restaurar temporalmente para depurar algo). NO ejecutar salvo que
+-- se entienda que esto reintroduce el doble descuento si `registrar_venta_pos`
+-- sigue activo.
+--
+-- CREATE OR REPLACE FUNCTION public.descontar_stock_al_vender()
+-- RETURNS trigger
+-- LANGUAGE plpgsql
+-- AS $$
+-- declare
+--   stock_actual integer;
+-- begin
+--   select stock into stock_actual
+--   from public.productos
+--   where id = new.producto_id
+--   for update;
+--
+--   if stock_actual is null then
+--     raise exception 'Producto no existe';
+--   end if;
+--
+--   if stock_actual < new.cantidad then
+--     raise exception 'Stock insuficiente';
+--   end if;
+--
+--   update public.productos
+--   set stock = stock - new.cantidad
+--   where id = new.producto_id;
+--
+--   return new;
+-- end;
+-- $$;
+--
+-- CREATE TRIGGER trg_detalle_venta_descuenta_stock
+--   BEFORE INSERT ON public.detalle_venta
+--   FOR EACH ROW
+--   EXECUTE FUNCTION public.descontar_stock_al_vender();
