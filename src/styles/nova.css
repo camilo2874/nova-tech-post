@@ -578,6 +578,21 @@ html[data-theme="dark"] .nt-field:focus {
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.22);
 }
 
+/* El menú desplegable de <select> lo pinta el sistema/navegador, no nuestro CSS de
+   fondo. En oscuro el texto heredaba un color casi blanco sobre un fondo nativo
+   blanco, quedando ilegible. Forzamos colores explícitos en las opciones. */
+select.nt-field option,
+select.nt-field optgroup {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+html[data-theme="dark"] select.nt-field option,
+html[data-theme="dark"] select.nt-field optgroup {
+  background-color: #1a1f2b;
+  color: #f1f5f9;
+}
+
 .nt-btn {
   appearance: none;
   border: 1px solid var(--nt-border);
