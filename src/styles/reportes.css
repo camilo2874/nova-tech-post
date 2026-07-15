@@ -497,6 +497,88 @@ html[data-theme="dark"] .rpt-turno-item.is-selected {
 
 html[data-theme="dark"] .rpt-top-total { color: #34d399; }
 
+/* ── Ventas por categoría (barras horizontales) ──────────── */
+.rpt-cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rpt-cat-item {
+  display: grid;
+  grid-template-columns: 160px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: var(--nt-radius-sm);
+  border: 1px solid var(--nt-border);
+  background: var(--nt-surface);
+}
+
+.rpt-cat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rpt-cat-nombre {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--nt-text-strong);
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rpt-cat-unidades {
+  font-size: 11.5px;
+  color: var(--nt-muted);
+  white-space: nowrap;
+}
+
+.rpt-cat-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--nt-surface-2);
+  overflow: hidden;
+}
+
+.rpt-cat-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d97706, #f59e0b);
+  transition: width 0.3s ease;
+}
+
+html[data-theme="dark"] .rpt-cat-bar-fill {
+  background: linear-gradient(90deg, #d97706, #fbbf24);
+}
+
+.rpt-cat-total {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #d97706;
+  white-space: nowrap;
+  text-align: right;
+  min-width: 90px;
+}
+
+html[data-theme="dark"] .rpt-cat-total { color: #fbbf24; }
+
+@media (max-width: 640px) {
+  .rpt-cat-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .rpt-cat-total {
+    text-align: left;
+    min-width: 0;
+  }
+}
+
 /* ── Zona de peligro (limpieza de datos) ─────────────────── */
 .rpt-danger-zone {
   border: 1.5px solid rgba(220, 38, 38, 0.3);
@@ -845,11 +927,13 @@ html[data-theme="dark"] .rpt-clean-result-title { color: #6ee7b7; }
 .rpt-seccion-card--purple { --rpt-sc-accent: #7c3aed; }
 .rpt-seccion-card--green  { --rpt-sc-accent: #059669; }
 .rpt-seccion-card--teal   { --rpt-sc-accent: #0891b2; }
+.rpt-seccion-card--amber  { --rpt-sc-accent: #d97706; }
 
 html[data-theme="dark"] .rpt-seccion-card--blue   { --rpt-sc-accent: #93c5fd; }
 html[data-theme="dark"] .rpt-seccion-card--purple { --rpt-sc-accent: #c4b5fd; }
 html[data-theme="dark"] .rpt-seccion-card--green  { --rpt-sc-accent: #34d399; }
 html[data-theme="dark"] .rpt-seccion-card--teal   { --rpt-sc-accent: #67e8f9; }
+html[data-theme="dark"] .rpt-seccion-card--amber  { --rpt-sc-accent: #fbbf24; }
 
 /* Interior de la tarjeta */
 .rpt-seccion-card-top {

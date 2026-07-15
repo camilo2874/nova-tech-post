@@ -69,7 +69,7 @@ export async function obtenerReporteTurno(cajaId) {
     supabase
       .from("ventas")
       .select(
-        "id, total, subtotal, descuento, metodo_pago, creado_en, usuarios(nombre), detalle_venta(cantidad, precio_unitario, productos(nombre))"
+        "id, total, subtotal, descuento, metodo_pago, creado_en, usuarios(nombre), detalle_venta(cantidad, precio_unitario, productos(nombre, categoria, precio_compra))"
       )
       .eq("caja_id", cajaId)
       .order("creado_en", { ascending: true }),
@@ -111,7 +111,7 @@ export async function obtenerReportePorRango(fechaDesde, fechaHasta, tipo = "per
     supabase
       .from("ventas")
       .select(
-        "id, total, subtotal, descuento, metodo_pago, creado_en, caja_id, usuarios(nombre), detalle_venta(cantidad, precio_unitario, productos(nombre))"
+        "id, total, subtotal, descuento, metodo_pago, creado_en, caja_id, usuarios(nombre), detalle_venta(cantidad, precio_unitario, productos(nombre, categoria, precio_compra))"
       )
       .gte("creado_en", desdeUTC)
       .lte("creado_en", hastaUTC)
@@ -172,7 +172,7 @@ export async function obtenerReporteGeneral() {
     supabase
       .from("ventas")
       .select(
-        "id, total, subtotal, descuento, metodo_pago, creado_en, caja_id, usuarios(nombre), detalle_venta(cantidad, precio_unitario, productos(nombre))"
+        "id, total, subtotal, descuento, metodo_pago, creado_en, caja_id, usuarios(nombre), detalle_venta(cantidad, precio_unitario, productos(nombre, categoria, precio_compra))"
       )
       .order("creado_en", { ascending: true })
       .limit(2000),
@@ -261,6 +261,33 @@ function _construirReporte({ tipo, label, turno = null, ventas, movimientos, tur
     .sort((a, b) => b.cantidad - a.cantidad)
     .slice(0, 15);
 
+  // Ventas por categoría
+  const categoriasMapa = {};
+  for (const venta of ventas) {
+    for (const item of venta.detalle_venta ?? []) {
+      const categoria = item.productos?.categoria?.trim() || "Sin categoría";
+      if (!categoriasMapa[categoria]) categoriasMapa[categoria] = { categoria, cantidad: 0, total: 0 };
+      categoriasMapa[categoria].cantidad += Number(item.cantidad);
+      categoriasMapa[categoria].total += Number(item.cantidad) * Number(item.precio_unitario);
+    }
+  }
+  const ventasPorCategoria = Object.values(categoriasMapa).sort((a, b) => b.total - a.total);
+
+  // Ganancia neta: ingresos por venta (ya con descuentos aplicados) menos el costo de los
+  // productos vendidos. Usa el precio_compra ACTUAL del producto en inventario — el sistema
+  // no guarda el costo histórico al momento exacto de cada venta. Productos sin precio_compra
+  // configurado se asumen con costo $0 para ese ítem.
+  const costoProductos = ventas.reduce(
+    (s, v) =>
+      s +
+      (v.detalle_venta ?? []).reduce(
+        (s2, item) => s2 + Number(item.cantidad) * Number(item.productos?.precio_compra ?? 0),
+        0
+      ),
+    0
+  );
+  const gananciaNeta = totalVentas - costoProductos;
+
   return {
     tipo,
     label,
@@ -270,6 +297,7 @@ function _construirReporte({ tipo, label, turno = null, ventas, movimientos, tur
     ventas,
     movimientos,
     productosMasVendidos,
+    ventasPorCategoria,
     metodosPago,
     resumen: {
       totalVentas,
@@ -282,6 +310,8 @@ function _construirReporte({ tipo, label, turno = null, ventas, movimientos, tur
       totalDescuentos,
       saldoInicial,
       efectivoEnCaja,
+      costoProductos,
+      gananciaNeta,
     },
   };
 }

@@ -417,6 +417,54 @@ function _tablaProductos(doc, productos, startY) {
   return doc.lastAutoTable.finalY + 8;
 }
 
+// ── Tabla de ventas por categoría ──────────────────────────────────────────
+
+function _tablaCategorias(doc, categorias, startY) {
+  const W = doc.internal.pageSize.getWidth();
+  if (categorias.length === 0) return startY;
+
+  const totalGeneral = categorias.reduce((s, c) => s + Number(c.total), 0) || 1;
+
+  const body = categorias.map((c) => [
+    c.categoria,
+    c.cantidad.toLocaleString("es-CO"),
+    COP(c.total),
+    `${((c.total / totalGeneral) * 100).toFixed(1)}%`,
+  ]);
+
+  autoTable(doc, {
+    startY,
+    theme: "grid",
+    styles: {
+      fontSize: 7,
+      cellPadding: { top: 2, bottom: 2, left: 3, right: 3 },
+      lineColor: SLATE_LINE,
+      lineWidth: 0.2,
+      textColor: OSCURO,
+    },
+    headStyles: {
+      fillColor: [146, 64, 14],
+      textColor: BLANCO,
+      fontStyle: "bold",
+      fontSize: 7,
+      cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
+    },
+    alternateRowStyles: { fillColor: [255, 251, 235] },
+    columnStyles: {
+      0: { cellWidth: "auto", fontStyle: "bold" },
+      1: { halign: "center", cellWidth: 32 },
+      2: { halign: "right", fontStyle: "bold", cellWidth: 36, textColor: AMBER },
+      3: { halign: "right", cellWidth: 24, textColor: SLATE },
+    },
+    head: [["Categoría", "Unidades Vendidas", "Total Generado", "% del Total"]],
+    body,
+    margin: { left: 14, right: 14 },
+    tableWidth: W - 28,
+  });
+
+  return doc.lastAutoTable.finalY + 8;
+}
+
 // ── Tabla de turnos ────────────────────────────────────────────────────────
 
 function _tablaTurnos(doc, turnos, startY) {
@@ -498,7 +546,7 @@ function _footerPaginas(doc, label) {
  * @param {object} reporte  Objeto devuelto por reportesServicio
  */
 export async function generarPdfReporte(reporte) {
-  const { tipo, label, turno, turnos, ventas, movimientos, productosMasVendidos, resumen } =
+  const { tipo, label, turno, turnos, ventas, movimientos, productosMasVendidos, ventasPorCategoria, resumen } =
     reporte;
 
   // Intentar cargar el logo antes de construir el PDF
@@ -537,6 +585,12 @@ export async function generarPdfReporte(reporte) {
         valor: COP(resumen.efectivoEnCaja),
         bg:    resumen.efectivoEnCaja >= 0 ? VERDE_CLARO : ROJO_CLARO,
         color: resumen.efectivoEnCaja >= 0 ? VERDE       : ROJO,
+      },
+      {
+        label: "Ganancia Neta",
+        valor: COP(resumen.gananciaNeta),
+        bg:    resumen.gananciaNeta >= 0 ? [243, 232, 255] : ROJO_CLARO,
+        color: resumen.gananciaNeta >= 0 ? [124, 58, 237]  : ROJO,
         grande: true,
       },
     ],
@@ -597,6 +651,12 @@ export async function generarPdfReporte(reporte) {
   if (productosMasVendidos.length > 0) {
     y = _seccionTitulo(doc, `Top ${productosMasVendidos.length} productos más vendidos`, y);
     y = _tablaProductos(doc, productosMasVendidos, y);
+  }
+
+  // ── VENTAS POR CATEGORÍA ─────────────────────────────────────────────────
+  if (ventasPorCategoria && ventasPorCategoria.length > 0) {
+    y = _seccionTitulo(doc, `Ventas por categoría (${ventasPorCategoria.length})`, y);
+    y = _tablaCategorias(doc, ventasPorCategoria, y);
   }
 
   // ── TURNOS (reportes de rango) ───────────────────────────────────────────

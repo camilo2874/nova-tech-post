@@ -201,6 +201,39 @@ export async function obtenerResumenTurno(cajaId) {
   };
 }
 
+/**
+ * Calcula la ganancia neta del turno: ingresos por ventas (ya con descuentos aplicados)
+ * menos el costo de los productos vendidos (cantidad × precio_compra actual del producto).
+ *
+ * NOTA: usa el precio_compra ACTUAL guardado en inventario, no un costo histórico —
+ * el sistema no guarda el costo que tenía el producto en el momento exacto de la venta.
+ * Si un producto no tiene precio_compra configurado, se asume costo $0 para ese ítem.
+ */
+export async function obtenerGananciaTurno(cajaId) {
+  const { data, error } = await supabase
+    .from("ventas")
+    .select("total, detalle_venta(cantidad, productos(precio_compra))")
+    .eq("caja_id", cajaId);
+
+  if (error) throw new Error(error.message);
+
+  let ingresoTotal = 0;
+  let costoTotal = 0;
+  for (const venta of data ?? []) {
+    ingresoTotal += Number(venta.total ?? 0);
+    for (const item of venta.detalle_venta ?? []) {
+      const costo = Number(item.productos?.precio_compra ?? 0);
+      costoTotal += costo * Number(item.cantidad ?? 0);
+    }
+  }
+
+  return {
+    ingresoTotal,
+    costoTotal,
+    ganancia: ingresoTotal - costoTotal,
+  };
+}
+
 export async function listarMovimientosCaja(cajaId) {
   const { data, error } = await supabase
     .from("movimientos_caja")

@@ -6,6 +6,7 @@ import {
   listarMovimientosCaja,
   obtenerCajaAbierta,
   obtenerDetalleVenta,
+  obtenerGananciaTurno,
   obtenerResumenesVentas,
   obtenerResumenTurno,
   obtenerSaldoUltimoCierre,
@@ -838,6 +839,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
   const [caja, setCaja] = useState(null);
   const [resumen, setResumen] = useState(null);
+  const [ganancia, setGanancia] = useState(null);
   const [movimientos, setMovimientos] = useState([]);
   const [saldoAnterior, setSaldoAnterior] = useState(0);
   const [cargando, setCargando] = useState(true);
@@ -887,31 +889,37 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
 
       if (abierta?.id) {
         // El usuario actual es el operador: carga sus propios datos
-        const [lista, res] = await Promise.all([
+        const [lista, res, gan] = await Promise.all([
           listarMovimientosCaja(abierta.id),
           obtenerResumenTurno(abierta.id),
+          obtenerGananciaTurno(abierta.id).catch(() => null),
         ]);
         setMovimientos(lista);
         setResumen(res);
+        setGanancia(gan);
       } else if (modoVisor && turnoActivo?.caja_id) {
         // Modo visor: no tenemos turno propio, pero existe un turno activo de otro usuario.
         // Cargamos sus métricas para monitoreo (RLS permite lectura a admin/superadmin).
         try {
-          const [lista, res] = await Promise.all([
+          const [lista, res, gan] = await Promise.all([
             listarMovimientosCaja(turnoActivo.caja_id),
             obtenerResumenTurno(turnoActivo.caja_id),
+            obtenerGananciaTurno(turnoActivo.caja_id).catch(() => null),
           ]);
           setMovimientos(lista);
           setResumen(res);
+          setGanancia(gan);
         } catch {
           // Si RLS bloquea (p. ej. cajero viendo a otro cajero), mostrar vacío sin error
           setMovimientos([]);
           setResumen(null);
+          setGanancia(null);
         }
       } else {
         // Sin turno activo en ningún lado
         setMovimientos([]);
         setResumen(null);
+        setGanancia(null);
         const saldo = await obtenerSaldoUltimoCierre();
         setSaldoAnterior(saldo);
         setMontoApertura(String(saldo));
@@ -938,12 +946,14 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
     if (!cajaId) return;
     const id = setInterval(async () => {
       try {
-        const [lista, res] = await Promise.all([
+        const [lista, res, gan] = await Promise.all([
           listarMovimientosCaja(cajaId),
           obtenerResumenTurno(cajaId),
+          obtenerGananciaTurno(cajaId).catch(() => null),
         ]);
         setMovimientos(lista);
         setResumen(res);
+        setGanancia(gan);
       } catch { /* silencioso */ }
     }, 30000);
     return () => clearInterval(id);
@@ -964,6 +974,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
       // monto_apertura en BD = saldoAnterior (base heredada); la diferencia va a movimientos
       const base = fila.monto_apertura ?? Number(montoApertura);
       setResumen({ monto_apertura: base, total_ingresos: 0, total_retiros: 0, efectivo_en_caja: base, total_movimientos: 0 });
+      setGanancia({ ingresoTotal: 0, costoTotal: 0, ganancia: 0 });
     } catch (err) {
       setErrorLocal(err.message);
     } finally {
@@ -1027,6 +1038,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
       notificar(null);
       setMovimientos([]);
       setResumen(null);
+      setGanancia(null);
       setModalActivo(null);
       setCierreContado("");
       setCierreNotas("");
@@ -1061,6 +1073,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
       efectivo_en_caja: turnoActivo.monto_apertura ?? 0,
       total_movimientos: 0,
     };
+    const gv = ganancia ?? { ingresoTotal: 0, costoTotal: 0, ganancia: 0 };
 
     return (
       <div className="nt-stack">
@@ -1146,6 +1159,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
             { label: "Ingresos del Turno", value: fmt(rv.total_ingresos), sub: "Ventas registradas", icon: "📈", from: "#047857", to: "#10b981" },
             { label: "Retiros Realizados", value: fmt(rv.total_retiros), sub: "Caja fuerte / consig.", icon: "💸", from: "#c2410c", to: "#f97316" },
             { label: "Efectivo en Caja", value: fmt(rv.efectivo_en_caja), sub: "Balance actual", icon: "💵", from: "#6d28d9", to: "#8b5cf6" },
+            { label: "Ganancia del Turno", value: fmt(gv.ganancia), sub: "Venta − costo de productos", icon: "💹", from: "#be185d", to: "#ec4899" },
           ].map((c) => (
             <div key={c.label} style={{
               background: `linear-gradient(145deg, ${c.from} 0%, ${c.to} 100%)`,
@@ -1423,6 +1437,7 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
     monto_apertura: caja.monto_apertura, total_ingresos: 0,
     total_retiros: 0, efectivo_en_caja: caja.monto_apertura, total_movimientos: 0,
   };
+  const g = ganancia ?? { ingresoTotal: 0, costoTotal: 0, ganancia: 0 };
 
   return (
     <div className="nt-stack">
@@ -1511,6 +1526,11 @@ export default function CajaTurnoPanel({ usuarioId, onCajaAbiertaChange }) {
             label: "Efectivo en Caja", value: fmt(r.efectivo_en_caja),
             sub: "Balance actual", icon: "💵",
             from: "#6d28d9", to: "#8b5cf6",
+          },
+          {
+            label: "Ganancia del Turno", value: fmt(g.ganancia),
+            sub: "Venta − costo de productos", icon: "💹",
+            from: "#be185d", to: "#ec4899",
           },
         ].map((c) => (
           <div key={c.label} style={{

@@ -277,6 +277,30 @@ function TopProductos({ productos }) {
   );
 }
 
+function VentasPorCategoria({ categorias }) {
+  if (!categorias.length) return null;
+  const maxTotal = Math.max(...categorias.map((c) => c.total), 1);
+  return (
+    <div className="rpt-cat-list">
+      {categorias.map((c) => {
+        const pct = (c.total / maxTotal) * 100;
+        return (
+          <div key={c.categoria} className="rpt-cat-item">
+            <div className="rpt-cat-info">
+              <span className="rpt-cat-nombre">{c.categoria}</span>
+              <span className="rpt-cat-unidades">{c.cantidad.toLocaleString("es-CO")} uds.</span>
+            </div>
+            <div className="rpt-cat-bar-track">
+              <div className="rpt-cat-bar-fill" style={{ width: `${pct}%` }} />
+            </div>
+            <div className="rpt-cat-total">{COP(c.total)}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function MetodosPago({ metodosPago }) {
   const entradas = Object.entries(metodosPago);
   if (!entradas.length) return null;
@@ -522,6 +546,7 @@ function DetalleModal({ tipo, reporte, onClose }) {
     ventas:       "Ventas registradas",
     movimientos:  "Movimientos de caja",
     productos:    "Productos más vendidos",
+    categorias:   "Ventas por categoría",
     turnos:       "Turnos de caja en el período",
   };
 
@@ -630,6 +655,12 @@ function DetalleModal({ tipo, reporte, onClose }) {
           {tipo === "productos" && (
             <div className="nt-card" style={{ padding: "12px 16px" }}>
               <TopProductos productos={reporte.productosMasVendidos} />
+            </div>
+          )}
+
+          {tipo === "categorias" && (
+            <div className="nt-card" style={{ padding: "12px 16px" }}>
+              <VentasPorCategoria categorias={reporte.ventasPorCategoria} />
             </div>
           )}
 
@@ -992,6 +1023,13 @@ export default function ReportesPage() {
                 color={reporte.resumen.efectivoEnCaja >= 0 ? "green" : "red"}
                 icon={reporte.resumen.efectivoEnCaja >= 0 ? "✅" : "⚠️"}
               />
+              <KpiCard
+                label="Ganancia neta"
+                value={COP(reporte.resumen.gananciaNeta)}
+                sub="Venta − costo de productos"
+                color={reporte.resumen.gananciaNeta >= 0 ? "purple" : "red"}
+                icon="💹"
+              />
             </div>
 
             {/* ── Info del turno ── */}
@@ -1092,6 +1130,21 @@ export default function ReportesPage() {
                     </span>
                   }
                   onClick={() => setModalAbierto("productos")}
+                />
+              )}
+              {reporte.ventasPorCategoria.length > 0 && (
+                <SectionCard
+                  title="Ventas por categoría"
+                  icon="🏷️"
+                  badge={reporte.ventasPorCategoria.length}
+                  colorClass="amber"
+                  stats={
+                    <span>
+                      Top: <strong>{reporte.ventasPorCategoria[0]?.categoria}</strong>{" "}
+                      ({COP(reporte.ventasPorCategoria[0]?.total)})
+                    </span>
+                  }
+                  onClick={() => setModalAbierto("categorias")}
                 />
               )}
               {reporte.tipo !== "turno" && reporte.turnos.length > 0 && (
