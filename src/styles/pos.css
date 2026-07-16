@@ -320,41 +320,44 @@ html[data-theme="dark"] .pos-alert-warn {
 
 .pos-btn-ghost {
   background: transparent;
-  border-color: var(--pos-border);
-  color: var(--pos-text-muted);
+  border-color: var(--pos-border, rgba(15, 23, 42, 0.1));
+  color: var(--pos-text-muted, #64748b);
 }
 
 .pos-btn-ghost:hover {
-  background: var(--pos-surface-2);
-  border-color: var(--pos-accent);
-  color: var(--pos-accent);
+  background: var(--pos-surface-2, #f8fafc);
+  border-color: var(--pos-accent, #2563eb);
+  color: var(--pos-accent, #2563eb);
 }
 
 .pos-btn-accent {
-  background: var(--pos-accent);
+  background: var(--pos-accent, #2563eb);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 2px 8px var(--pos-accent-glow);
+  box-shadow: 0 2px 8px var(--pos-accent-glow, rgba(37, 99, 235, 0.18));
 }
 
 .pos-btn-accent:hover {
   opacity: 0.88;
-  box-shadow: 0 4px 14px var(--pos-accent-glow);
+  box-shadow: 0 4px 14px var(--pos-accent-glow, rgba(37, 99, 235, 0.18));
 }
 
+/* Fallback (#2563eb) por si este botón se renderiza fuera de .pos-root, donde
+   viven las variables --pos-*: sin esto, en tema claro quedaba con fondo
+   transparente y texto blanco, es decir, invisible. */
 .pos-btn-primary {
-  background: var(--pos-accent);
+  background: var(--pos-accent, #2563eb);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 2px 8px var(--pos-accent-glow);
+  box-shadow: 0 2px 8px var(--pos-accent-glow, rgba(37, 99, 235, 0.18));
   padding: 11px 24px;
   font-size: 14px;
-  border-radius: var(--pos-radius-sm);
+  border-radius: var(--pos-radius-sm, 8px);
 }
 
 .pos-btn-primary:hover {
   opacity: 0.9;
-  box-shadow: 0 4px 16px var(--pos-accent-glow);
+  box-shadow: 0 4px 16px var(--pos-accent-glow, rgba(37, 99, 235, 0.18));
 }
 
 html[data-theme="dark"] .pos-btn-accent {

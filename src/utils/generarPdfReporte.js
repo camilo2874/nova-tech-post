@@ -512,6 +512,185 @@ function _tablaTurnos(doc, turnos, startY) {
   return doc.lastAutoTable.finalY + 8;
 }
 
+// ── Tabla de inventario: inversión por categoría ──────────────────────────
+
+function _tablaInventarioCategorias(doc, categorias, startY) {
+  const W = doc.internal.pageSize.getWidth();
+  if (categorias.length === 0) return startY;
+
+  const body = categorias.map((c) => [
+    c.categoria,
+    String(c.numProductos),
+    c.cantidadActual.toLocaleString("es-CO"),
+    COP(c.valorInvertido),
+    COP(c.valorVentaPotencial),
+    COP(c.gananciaPotencial),
+  ]);
+
+  autoTable(doc, {
+    startY,
+    theme: "grid",
+    styles: {
+      fontSize: 7,
+      cellPadding: { top: 2, bottom: 2, left: 3, right: 3 },
+      lineColor: SLATE_LINE,
+      lineWidth: 0.2,
+      textColor: OSCURO,
+    },
+    headStyles: {
+      fillColor: [6, 78, 59],
+      textColor: BLANCO,
+      fontStyle: "bold",
+      fontSize: 7,
+      cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
+    },
+    alternateRowStyles: { fillColor: [240, 253, 244] },
+    columnStyles: {
+      0: { cellWidth: "auto", fontStyle: "bold" },
+      1: { halign: "center", cellWidth: 18 },
+      2: { halign: "right", cellWidth: 24 },
+      3: { halign: "right", cellWidth: 30, textColor: VERDE },
+      4: { halign: "right", cellWidth: 30, textColor: [124, 58, 237] },
+      5: { halign: "right", cellWidth: 30, fontStyle: "bold" },
+    },
+    head: [["Categoría", "Prod.", "Cant. actual", "Inversión", "Valor a recibir", "Ganancia"]],
+    body,
+    didParseCell(d) {
+      if (d.section === "body" && d.column.index === 5) {
+        d.cell.styles.textColor = String(d.cell.raw).includes("-") ? ROJO : VERDE;
+      }
+    },
+    margin: { left: 14, right: 14 },
+    tableWidth: W - 28,
+  });
+
+  return doc.lastAutoTable.finalY + 8;
+}
+
+// ── Tabla de inventario: detalle por producto ─────────────────────────────
+
+function _tablaInventarioProductos(doc, productos, startY) {
+  const W = doc.internal.pageSize.getWidth();
+  if (productos.length === 0) return startY;
+
+  const body = productos.map((p) => [
+    p.nombre,
+    p.categoria,
+    p.cantidadInicial.toLocaleString("es-CO") + (p.tieneHistorialInicial ? "" : " *"),
+    p.cantidadActual.toLocaleString("es-CO"),
+    COP(p.precioCompra),
+    COP(p.precioVenta),
+    COP(p.valorInvertido),
+    COP(p.gananciaPotencial),
+  ]);
+
+  autoTable(doc, {
+    startY,
+    theme: "grid",
+    styles: {
+      fontSize: 6.5,
+      cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 },
+      overflow: "linebreak",
+      lineColor: SLATE_LINE,
+      lineWidth: 0.2,
+      textColor: OSCURO,
+    },
+    headStyles: {
+      fillColor: NAVY,
+      textColor: BLANCO,
+      fontStyle: "bold",
+      fontSize: 6.5,
+      cellPadding: { top: 3, bottom: 3, left: 2.5, right: 2.5 },
+    },
+    alternateRowStyles: { fillColor: SLATE_LIGHT },
+    columnStyles: {
+      0: { cellWidth: "auto", fontStyle: "bold" },
+      1: { cellWidth: 26 },
+      2: { halign: "right", cellWidth: 20 },
+      3: { halign: "right", cellWidth: 20, fontStyle: "bold" },
+      4: { halign: "right", cellWidth: 22 },
+      5: { halign: "right", cellWidth: 22 },
+      6: { halign: "right", cellWidth: 24 },
+      7: { halign: "right", cellWidth: 24 },
+    },
+    head: [["Producto", "Categoría", "Cant. inicial", "Cant. actual", "P. compra", "P. venta", "Inversión", "Ganancia"]],
+    body,
+    foot: [[
+      {
+        content: `${productos.length} producto${productos.length !== 1 ? "s" : ""} — * sin historial de stock inicial (se muestra igual a la cantidad actual)`,
+        colSpan: 8,
+        styles: { fontStyle: "italic", fontSize: 6, fillColor: [226, 232, 240], textColor: SLATE },
+      },
+    ]],
+    didParseCell(d) {
+      if (d.section === "body" && d.column.index === 7) {
+        d.cell.styles.textColor = String(d.cell.raw).includes("-") ? ROJO : VERDE;
+      }
+    },
+    margin: { left: 14, right: 14 },
+    tableWidth: W - 28,
+  });
+
+  return doc.lastAutoTable.finalY + 8;
+}
+
+// ── PDF del reporte de inventario (estructura distinta a los financieros) ──
+
+async function _generarPdfInventario(reporte) {
+  const { label, productos, categorias, resumen } = reporte;
+
+  const logoData = await _cargarLogo();
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  _header(doc, label, logoData);
+  let y = 47;
+
+  y = _seccionTitulo(doc, "Resumen de inventario", y);
+  y = _kpiBox(
+    doc,
+    [
+      { label: "Productos", valor: String(resumen.totalProductos), bg: SLATE_LIGHT, color: SLATE },
+      { label: "Unidades Actuales", valor: resumen.totalUnidadesActuales.toLocaleString("es-CO"), bg: NAVY_LIGHT, color: NAVY },
+      { label: "Capital Invertido", valor: COP(resumen.totalInvertido), bg: VERDE_CLARO, color: VERDE, grande: true },
+      { label: "Valor a Precio Venta", valor: COP(resumen.totalValorVenta), bg: [243, 232, 255], color: [124, 58, 237] },
+      {
+        label: "Ganancia Potencial",
+        valor: COP(resumen.totalGananciaPotencial),
+        bg:    resumen.totalGananciaPotencial >= 0 ? VERDE_CLARO : ROJO_CLARO,
+        color: resumen.totalGananciaPotencial >= 0 ? VERDE       : ROJO,
+        grande: true,
+      },
+    ],
+    y
+  );
+
+  y += 2;
+
+  if (resumen.productosSinHistorialInicial > 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(...AMBER);
+    doc.text(
+      `Nota: ${resumen.productosSinHistorialInicial} producto(s) no tienen historial de stock inicial (se crearon antes de instalar el Kardex de inventario). Para esos se muestra cantidad inicial = cantidad actual.`,
+      14,
+      y,
+      { maxWidth: doc.internal.pageSize.getWidth() - 28 }
+    );
+    y += 10;
+  }
+
+  y = _seccionTitulo(doc, `Inversión y ganancia potencial por categoría (${categorias.length})`, y);
+  y = _tablaInventarioCategorias(doc, categorias, y);
+
+  y = _seccionTitulo(doc, `Detalle de productos (${productos.length})`, y);
+  _tablaInventarioProductos(doc, productos, y);
+
+  _footerPaginas(doc, label);
+
+  const fecha = new Date().toISOString().split("T")[0];
+  doc.save(`reporte-inventario-${fecha}.pdf`);
+}
+
 // ── Footer en todas las páginas ────────────────────────────────────────────
 
 function _footerPaginas(doc, label) {
@@ -546,6 +725,10 @@ function _footerPaginas(doc, label) {
  * @param {object} reporte  Objeto devuelto por reportesServicio
  */
 export async function generarPdfReporte(reporte) {
+  if (reporte.tipo === "inventario") {
+    return _generarPdfInventario(reporte);
+  }
+
   const { tipo, label, turno, turnos, ventas, movimientos, productosMasVendidos, ventasPorCategoria, resumen } =
     reporte;
 

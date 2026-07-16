@@ -316,6 +316,117 @@ function _construirReporte({ tipo, label, turno = null, ventas, movimientos, tur
   };
 }
 
+// ── Reporte de inventario (foto del estado actual, no depende de fechas) ──
+
+/**
+ * Reporte de inventario: cantidad inicial vs. actual, precios e inversión/ganancia
+ * potencial por producto y por categoría.
+ *
+ * "Cantidad inicial" viene del Kardex de inventario (movimientos_inventario, ver
+ * supabase/kardex-inventario.sql) — el primer movimiento tipo "entrada" con motivo
+ * "Stock inicial...". Si un producto no tiene ese historial (se creó antes de
+ * instalar el Kardex, o antes de correr el backfill), se usa la cantidad actual
+ * como aproximación y se marca `tieneHistorialInicial: false`.
+ *
+ * Si la tabla movimientos_inventario todavía no existe (no se ha ejecutado
+ * kardex-inventario.sql), el reporte se degrada con gracia: todas las cantidades
+ * iniciales quedan iguales a las actuales, en vez de fallar.
+ */
+export async function obtenerReporteInventario() {
+  const [productosRes, movimientosRes] = await Promise.all([
+    supabase
+      .from("productos")
+      .select("id, nombre, categoria, precio_compra, precio_venta, stock")
+      .order("categoria", { ascending: true })
+      .order("nombre", { ascending: true }),
+    supabase
+      .from("movimientos_inventario")
+      .select("producto_id, cantidad, creado_en")
+      .eq("tipo", "entrada")
+      .ilike("motivo", "Stock inicial%")
+      .order("creado_en", { ascending: true }),
+  ]);
+
+  if (productosRes.error) throw new Error(productosRes.error.message);
+  const movimientosData = movimientosRes.error ? [] : (movimientosRes.data ?? []);
+
+  const inicialPorProducto = {};
+  for (const m of movimientosData) {
+    if (!(m.producto_id in inicialPorProducto)) {
+      inicialPorProducto[m.producto_id] = Number(m.cantidad);
+    }
+  }
+
+  const productos = (productosRes.data ?? []).map((p) => {
+    const cantidadActual = Number(p.stock ?? 0);
+    const tieneHistorialInicial = p.id in inicialPorProducto;
+    const cantidadInicial = tieneHistorialInicial ? inicialPorProducto[p.id] : cantidadActual;
+    const precioCompra = Number(p.precio_compra ?? 0);
+    const precioVenta = Number(p.precio_venta ?? 0);
+    const valorInvertido = precioCompra * cantidadActual;
+    const valorVentaPotencial = precioVenta * cantidadActual;
+
+    return {
+      id: p.id,
+      nombre: p.nombre,
+      categoria: p.categoria?.trim() || "Sin categoría",
+      cantidadInicial,
+      cantidadActual,
+      precioCompra,
+      precioVenta,
+      valorInvertido,
+      valorVentaPotencial,
+      gananciaPotencial: valorVentaPotencial - valorInvertido,
+      tieneHistorialInicial,
+    };
+  });
+
+  const categoriasMapa = {};
+  for (const p of productos) {
+    if (!categoriasMapa[p.categoria]) {
+      categoriasMapa[p.categoria] = {
+        categoria: p.categoria,
+        numProductos: 0,
+        cantidadActual: 0,
+        cantidadInicial: 0,
+        valorInvertido: 0,
+        valorVentaPotencial: 0,
+        gananciaPotencial: 0,
+      };
+    }
+    const c = categoriasMapa[p.categoria];
+    c.numProductos += 1;
+    c.cantidadActual += p.cantidadActual;
+    c.cantidadInicial += p.cantidadInicial;
+    c.valorInvertido += p.valorInvertido;
+    c.valorVentaPotencial += p.valorVentaPotencial;
+    c.gananciaPotencial += p.gananciaPotencial;
+  }
+  const categorias = Object.values(categoriasMapa).sort((a, b) => b.valorInvertido - a.valorInvertido);
+
+  const resumen = {
+    totalProductos: productos.length,
+    totalUnidadesActuales: productos.reduce((s, p) => s + p.cantidadActual, 0),
+    totalUnidadesIniciales: productos.reduce((s, p) => s + p.cantidadInicial, 0),
+    totalInvertido: productos.reduce((s, p) => s + p.valorInvertido, 0),
+    totalValorVenta: productos.reduce((s, p) => s + p.valorVentaPotencial, 0),
+    totalGananciaPotencial: productos.reduce((s, p) => s + p.gananciaPotencial, 0),
+    productosSinHistorialInicial: productos.filter((p) => !p.tieneHistorialInicial).length,
+  };
+
+  return {
+    tipo: "inventario",
+    label: `Reporte de Inventario — ${new Date().toLocaleDateString("es-CO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })}`,
+    productos,
+    categorias,
+    resumen,
+  };
+}
+
 function _fechaCorta(fecha) {
   if (!fecha) return "—";
   return new Date(fecha).toLocaleDateString("es-CO", {

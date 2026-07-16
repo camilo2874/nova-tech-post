@@ -5,6 +5,7 @@ import {
   obtenerReporteTurno,
   obtenerReportePorRango,
   obtenerReporteGeneral,
+  obtenerReporteInventario,
   limpiarDatosFinancieros,
   hayTurnosAbiertos,
   hoyLocal,
@@ -45,11 +46,12 @@ function fechaCorta(f) {
 }
 
 const TABS = [
-  { id: "turno",   label: "Por Turno",  icon: "⏱️" },
-  { id: "dia",     label: "Hoy",        icon: "📅" },
-  { id: "semana",  label: "Semana",     icon: "🗓️" },
-  { id: "mes",     label: "Mes",        icon: "📆" },
-  { id: "general", label: "General",    icon: "📊" },
+  { id: "turno",      label: "Por Turno",  icon: "⏱️" },
+  { id: "dia",        label: "Hoy",        icon: "📅" },
+  { id: "semana",     label: "Semana",     icon: "🗓️" },
+  { id: "mes",        label: "Mes",        icon: "📆" },
+  { id: "general",    label: "General",    icon: "📊" },
+  { id: "inventario", label: "Inventario", icon: "📦" },
 ];
 
 // ── Componentes secundarios ────────────────────────────────────────────────
@@ -301,6 +303,159 @@ function VentasPorCategoria({ categorias }) {
   );
 }
 
+function InversionPorCategoria({ categorias }) {
+  if (!categorias.length) {
+    return (
+      <div className="rpt-empty">
+        <div className="rpt-empty-icon">📦</div>
+        <p className="rpt-empty-text">No hay productos registrados.</p>
+      </div>
+    );
+  }
+
+  const totales = categorias.reduce(
+    (acc, c) => ({
+      actual: acc.actual + c.cantidadActual,
+      invertido: acc.invertido + c.valorInvertido,
+      ventaPotencial: acc.ventaPotencial + c.valorVentaPotencial,
+      ganancia: acc.ganancia + c.gananciaPotencial,
+    }),
+    { actual: 0, invertido: 0, ventaPotencial: 0, ganancia: 0 }
+  );
+
+  return (
+    <div className="nt-table-wrap">
+      <table className="nt-table">
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th style={{ textAlign: "right" }}>Productos</th>
+            <th style={{ textAlign: "right" }}>Cant. actual</th>
+            <th style={{ textAlign: "right" }}>Inversión</th>
+            <th style={{ textAlign: "right" }}>Valor a recibir</th>
+            <th style={{ textAlign: "right" }}>Ganancia potencial</th>
+          </tr>
+        </thead>
+        <tbody>
+          {categorias.map((c) => (
+            <tr key={c.categoria}>
+              <td style={{ fontWeight: 700, textTransform: "capitalize" }}>{c.categoria}</td>
+              <td style={{ textAlign: "right" }} className="nt-muted">{c.numProductos}</td>
+              <td style={{ textAlign: "right" }}>{c.cantidadActual.toLocaleString("es-CO")}</td>
+              <td style={{ textAlign: "right" }}>{COP(c.valorInvertido)}</td>
+              <td style={{ textAlign: "right" }}>{COP(c.valorVentaPotencial)}</td>
+              <td
+                style={{ textAlign: "right" }}
+                className={c.gananciaPotencial >= 0 ? "rpt-monto-pos" : "rpt-monto-neg"}
+              >
+                {COP(c.gananciaPotencial)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="rpt-table-footer-row">
+            <td style={{ fontWeight: 700 }}>Total — {categorias.length} categoría{categorias.length !== 1 ? "s" : ""}</td>
+            <td />
+            <td style={{ textAlign: "right", fontWeight: 700 }}>{totales.actual.toLocaleString("es-CO")}</td>
+            <td style={{ textAlign: "right", fontWeight: 700 }}>{COP(totales.invertido)}</td>
+            <td style={{ textAlign: "right", fontWeight: 700 }}>{COP(totales.ventaPotencial)}</td>
+            <td
+              style={{ textAlign: "right", fontWeight: 700 }}
+              className={totales.ganancia >= 0 ? "rpt-monto-pos" : "rpt-monto-neg"}
+            >
+              {COP(totales.ganancia)}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+function TablaInventarioProductos({ productos }) {
+  if (!productos.length) {
+    return (
+      <div className="rpt-empty">
+        <div className="rpt-empty-icon">📦</div>
+        <p className="rpt-empty-text">No hay productos para mostrar.</p>
+      </div>
+    );
+  }
+
+  const totales = productos.reduce(
+    (acc, p) => ({
+      invertido: acc.invertido + p.valorInvertido,
+      ventaPotencial: acc.ventaPotencial + p.valorVentaPotencial,
+      ganancia: acc.ganancia + p.gananciaPotencial,
+    }),
+    { invertido: 0, ventaPotencial: 0, ganancia: 0 }
+  );
+
+  return (
+    <div className="nt-table-wrap">
+      <table className="nt-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th style={{ textAlign: "right" }}>Cant. inicial</th>
+            <th style={{ textAlign: "right" }}>Cant. actual</th>
+            <th style={{ textAlign: "right" }}>Precio compra</th>
+            <th style={{ textAlign: "right" }}>Precio venta</th>
+            <th style={{ textAlign: "right" }}>Inversión</th>
+            <th style={{ textAlign: "right" }}>Ganancia potencial</th>
+          </tr>
+        </thead>
+        <tbody>
+          {productos.map((p) => (
+            <tr key={p.id}>
+              <td style={{ fontWeight: 600 }}>{p.nombre}</td>
+              <td>
+                <span className="rpt-badge rpt-badge--metodo" style={{ textTransform: "capitalize" }}>
+                  {p.categoria}
+                </span>
+              </td>
+              <td style={{ textAlign: "right" }}>
+                {p.cantidadInicial.toLocaleString("es-CO")}
+                {!p.tieneHistorialInicial && (
+                  <span title="Sin historial de stock inicial: se muestra igual a la cantidad actual" style={{ marginLeft: 4 }}>
+                    ⚠️
+                  </span>
+                )}
+              </td>
+              <td style={{ textAlign: "right", fontWeight: 700 }}>{p.cantidadActual.toLocaleString("es-CO")}</td>
+              <td style={{ textAlign: "right" }} className="nt-muted">{COP(p.precioCompra)}</td>
+              <td style={{ textAlign: "right" }} className="nt-muted">{COP(p.precioVenta)}</td>
+              <td style={{ textAlign: "right" }}>{COP(p.valorInvertido)}</td>
+              <td
+                style={{ textAlign: "right" }}
+                className={p.gananciaPotencial >= 0 ? "rpt-monto-pos" : "rpt-monto-neg"}
+              >
+                {COP(p.gananciaPotencial)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="rpt-table-footer-row">
+            <td colSpan={6} style={{ fontWeight: 700 }}>
+              {productos.length} producto{productos.length !== 1 ? "s" : ""}
+            </td>
+            <td style={{ textAlign: "right", fontWeight: 700 }}>{COP(totales.invertido)}</td>
+            <td
+              style={{ textAlign: "right", fontWeight: 700 }}
+              className={totales.ganancia >= 0 ? "rpt-monto-pos" : "rpt-monto-neg"}
+            >
+              {COP(totales.ganancia)}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
 function MetodosPago({ metodosPago }) {
   const entradas = Object.entries(metodosPago);
   if (!entradas.length) return null;
@@ -502,6 +657,19 @@ function DetalleModal({ tipo, reporte, onClose }) {
   const [busquedaVentas, setBusquedaVentas]     = useState("");
   const [filtroMovimiento, setFiltroMovimiento] = useState("todos");
   const [busquedaMov, setBusquedaMov]           = useState("");
+  const [busquedaInv, setBusquedaInv]           = useState("");
+
+  const productosInventarioFiltrados = useMemo(() => {
+    if (tipo !== "inventario-productos") return [];
+    let r = reporte.productos;
+    if (busquedaInv.trim()) {
+      const q = busquedaInv.trim().toLowerCase();
+      r = r.filter(
+        (p) => p.nombre.toLowerCase().includes(q) || p.categoria.toLowerCase().includes(q)
+      );
+    }
+    return r;
+  }, [tipo, reporte, busquedaInv]);
 
   const ventasFiltradas = useMemo(() => {
     if (tipo !== "ventas") return [];
@@ -543,11 +711,12 @@ function DetalleModal({ tipo, reporte, onClose }) {
   }, [tipo, reporte, filtroMovimiento, busquedaMov]);
 
   const TITULOS = {
-    ventas:       "Ventas registradas",
-    movimientos:  "Movimientos de caja",
-    productos:    "Productos más vendidos",
-    categorias:   "Ventas por categoría",
-    turnos:       "Turnos de caja en el período",
+    ventas:                "Ventas registradas",
+    movimientos:           "Movimientos de caja",
+    productos:             "Productos más vendidos",
+    categorias:            "Ventas por categoría",
+    turnos:                "Turnos de caja en el período",
+    "inventario-productos": "Detalle de inventario por producto",
   };
 
   return (
@@ -668,6 +837,31 @@ function DetalleModal({ tipo, reporte, onClose }) {
             <TablaTurnos turnos={reporte.turnos} />
           )}
 
+          {tipo === "inventario-productos" && (
+            <>
+              <div className="rpt-filtros">
+                <input
+                  type="text"
+                  className="nt-field rpt-filtro-search"
+                  placeholder="Buscar producto o categoría…"
+                  value={busquedaInv}
+                  onChange={(e) => setBusquedaInv(e.target.value)}
+                />
+                {busquedaInv && (
+                  <button className="rpt-filtro-reset" onClick={() => setBusquedaInv("")}>
+                    Limpiar
+                  </button>
+                )}
+                {productosInventarioFiltrados.length !== reporte.productos.length && (
+                  <span className="rpt-section-filtered">
+                    {productosInventarioFiltrados.length} de {reporte.productos.length}
+                  </span>
+                )}
+              </div>
+              <TablaInventarioProductos productos={productosInventarioFiltrados} />
+            </>
+          )}
+
         </div>
       </div>
     </div>
@@ -738,6 +932,8 @@ export default function ReportesPage() {
         datos = await obtenerReporteTurno(turnoSelId);
       } else if (tabActiva === "general") {
         datos = await obtenerReporteGeneral();
+      } else if (tabActiva === "inventario") {
+        datos = await obtenerReporteInventario();
       } else {
         datos = await obtenerReportePorRango(fechaDesde, fechaHasta, tabActiva);
       }
@@ -856,7 +1052,7 @@ export default function ReportesPage() {
             )}
 
             {/* Filtros de fecha para dia/semana/mes/general */}
-            {tabActiva !== "turno" && tabActiva !== "general" && (
+            {tabActiva !== "turno" && tabActiva !== "general" && tabActiva !== "inventario" && (
               <>
                 <div>
                   <div className="rpt-controls-label">Desde</div>
@@ -885,6 +1081,13 @@ export default function ReportesPage() {
             {tabActiva === "general" && (
               <p className="nt-muted" style={{ margin: 0, fontSize: 14 }}>
                 Este reporte incluye <strong>todo el historial</strong> disponible en el sistema.
+              </p>
+            )}
+
+            {tabActiva === "inventario" && (
+              <p className="nt-muted" style={{ margin: 0, fontSize: 14 }}>
+                Foto del <strong>estado actual del inventario</strong>: cantidad inicial vs. actual,
+                inversión y ganancia potencial por producto y categoría.
               </p>
             )}
 
@@ -939,7 +1142,96 @@ export default function ReportesPage() {
           </div>
         )}
 
-        {!cargando && reporte && (
+        {!cargando && reporte && reporte.tipo === "inventario" && (
+          <>
+            {/* ── Aviso de productos sin historial de stock inicial ── */}
+            {reporte.resumen.productosSinHistorialInicial > 0 && (
+              <div className="nt-alert" style={{
+                background: "var(--nt-amber-50, #fffbeb)",
+                border: "1px solid var(--nt-amber-300, #fcd34d)",
+                borderRadius: 10,
+                padding: "12px 16px",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+                fontSize: 13.5,
+              }}>
+                <span style={{ fontSize: 18, lineHeight: 1 }}>⚠️</span>
+                <div>
+                  <strong>
+                    {reporte.resumen.productosSinHistorialInicial} producto
+                    {reporte.resumen.productosSinHistorialInicial !== 1 ? "s" : ""} sin historial de stock inicial.
+                  </strong>
+                  {" "}Se crearon antes de instalar el Kardex de inventario, así que su "cantidad inicial" se
+                  muestra igual a la actual. Ejecuta <code>supabase/kardex-inventario-backfill.sql</code> para completarlo.
+                </div>
+              </div>
+            )}
+
+            {/* ── KPIs de inventario ── */}
+            <div className="rpt-kpis">
+              <KpiCard
+                label="Productos"
+                value={reporte.resumen.totalProductos}
+                sub={`${reporte.categorias.length} categoría${reporte.categorias.length !== 1 ? "s" : ""}`}
+                color="blue"
+                icon="📦"
+              />
+              <KpiCard
+                label="Unidades actuales"
+                value={reporte.resumen.totalUnidadesActuales.toLocaleString("es-CO")}
+                sub={`${reporte.resumen.totalUnidadesIniciales.toLocaleString("es-CO")} al inicio`}
+                color="teal"
+                icon="🔢"
+              />
+              <KpiCard
+                label="Capital invertido"
+                value={COP(reporte.resumen.totalInvertido)}
+                sub="Precio compra × stock actual"
+                color="green"
+                icon="📥"
+              />
+              <KpiCard
+                label="Valor a precio de venta"
+                value={COP(reporte.resumen.totalValorVenta)}
+                sub="Si se vende todo el stock actual"
+                color="purple"
+                icon="💰"
+              />
+              <KpiCard
+                label="Ganancia potencial"
+                value={COP(reporte.resumen.totalGananciaPotencial)}
+                sub="Valor de venta − capital invertido"
+                color={reporte.resumen.totalGananciaPotencial >= 0 ? "amber" : "red"}
+                icon="💹"
+              />
+            </div>
+
+            {/* ── Inversión y ganancia por categoría ── */}
+            <section className="nt-card nt-stack">
+              <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>Inversión y ganancia potencial por categoría</h2>
+              <InversionPorCategoria categorias={reporte.categorias} />
+            </section>
+
+            {/* ── Tarjeta hacia el detalle de productos ── */}
+            <div className="rpt-seccion-cards">
+              <SectionCard
+                title="Detalle de productos"
+                icon="📋"
+                badge={reporte.productos.length}
+                colorClass="blue"
+                stats={
+                  <span>
+                    Cantidad inicial, actual, precios e inversión por producto
+                  </span>
+                }
+                onClick={() => setModalAbierto("inventario-productos")}
+              />
+            </div>
+          </>
+        )}
+
+        {!cargando && reporte && reporte.tipo !== "inventario" && (
           <>
             {/* ── Aviso turno multidía ── */}
             {reporte.tipo !== "turno" && reporte.turnosMultidia?.length > 0 && (

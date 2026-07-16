@@ -623,24 +623,29 @@ export default function VentasPage() {
         </div>
       }
     >
-      {/* ── Modal de Éxito ─────────────────────────────── */}
-      {modalExito && (
-        <ModalExito
-          datos={modalExito}
-          onImprimir={() =>
-            imprimirFacturaTicket({
-              factura: modalExito.factura,
-              vendedor: { nombre: perfil?.nombre ?? null },
-              tienda: null,
-              montoRecibido: modalExito.montoRecibido,
-              vuelto: modalExito.vuelto,
-            })
-          }
-          onCerrar={resetModule}
-        />
-      )}
-
       <div className="pos-root">
+        {/* ── Modal de Éxito ─────────────────────────────── */}
+        {/* Debe ir DENTRO de .pos-root: ahí se definen las variables de color
+            --pos-accent, etc. Si quedara fuera (como antes), en tema claro el
+            botón "Nueva Venta" quedaba con fondo transparente e ilegible: el
+            tema oscuro "funcionaba por casualidad" porque tiene un color fijo
+            de respaldo que no depende de esas variables. */}
+        {modalExito && (
+          <ModalExito
+            datos={modalExito}
+            onImprimir={() =>
+              imprimirFacturaTicket({
+                factura: modalExito.factura,
+                vendedor: { nombre: perfil?.nombre ?? null },
+                tienda: null,
+                montoRecibido: modalExito.montoRecibido,
+                vuelto: modalExito.vuelto,
+              })
+            }
+            onCerrar={resetModule}
+          />
+        )}
+
         {/* ── Alertas ───────────────────────────────────── */}
         {!cargandoCaja && !cajaAbierta?.id && modoVisor && (
           <div className="pos-alert" style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1e3a8a" }}>

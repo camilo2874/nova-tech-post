@@ -9,8 +9,10 @@ import {
 } from "../services/categoriasServicio";
 import {
   actualizarProducto,
+  ajustarStock,
   crearProducto,
   eliminarProducto,
+  obtenerMovimientosInventario,
   obtenerProductos,
 } from "../services/productosServicio";
 import "../styles/inventario.css";
@@ -85,7 +87,7 @@ function StatCard({ icon, label, value, sub, variant = "blue", badge }) {
 }
 
 /* ─── Tarjeta de producto ────────────────────────────────── */
-function ProductCard({ producto, esAdmin, onEditar, onEliminar }) {
+function ProductCard({ producto, esAdmin, onEditar, onEliminar, onAjustarStock, onVerHistorial }) {
   const stockMinimo = producto.stock_minimo ?? 2;
   const stockPct = Math.min((producto.stock / Math.max(stockMinimo * 2, 1)) * 100, 100);
   const stockBajo = producto.stock <= stockMinimo;
@@ -125,24 +127,273 @@ function ProductCard({ producto, esAdmin, onEditar, onEliminar }) {
       </div>
 
       {esAdmin ? (
-        <div className="inv-prod-actions">
-          <button
-            className="inv-btn inv-btn-edit"
-            type="button"
-            onClick={() => onEditar(producto)}
-          >
-            ✏ Editar
-          </button>
-          <button
-            className="inv-btn inv-btn-delete"
-            type="button"
-            onClick={() => onEliminar(producto)}
-          >
-            🗑
-          </button>
-        </div>
+        <>
+          <div className="inv-prod-actions">
+            <button
+              className="inv-btn inv-btn-stock"
+              type="button"
+              onClick={() => onAjustarStock(producto)}
+            >
+              📥 Ajustar stock
+            </button>
+            <button
+              className="inv-btn inv-btn-ghost inv-btn-sm"
+              type="button"
+              onClick={() => onVerHistorial(producto)}
+              title="Ver historial de stock (Kardex)"
+            >
+              📜
+            </button>
+          </div>
+          <div className="inv-prod-actions">
+            <button
+              className="inv-btn inv-btn-edit"
+              type="button"
+              onClick={() => onEditar(producto)}
+            >
+              ✏ Editar
+            </button>
+            <button
+              className="inv-btn inv-btn-delete"
+              type="button"
+              onClick={() => onEliminar(producto)}
+            >
+              🗑
+            </button>
+          </div>
+        </>
       ) : null}
     </div>
+  );
+}
+
+/* ─── Badge de tipo de movimiento (Kardex) ──────────────── */
+function BadgeTipoMovimiento({ tipo }) {
+  const estilos = {
+    entrada: { bg: "#dcfce7", fg: "#15803d", label: "▲ Entrada" },
+    venta: { bg: "#dbeafe", fg: "#1d4ed8", label: "🛒 Venta" },
+    ajuste: { bg: "#fef3c7", fg: "#92400e", label: "✎ Ajuste" },
+  };
+  const s = estilos[tipo] ?? { bg: "#e2e8f0", fg: "#475569", label: tipo };
+  return (
+    <span
+      style={{
+        background: s.bg,
+        color: s.fg,
+        padding: "2px 10px",
+        borderRadius: "999px",
+        fontSize: "0.74rem",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
+/* ─── Modal: Ajustar Stock ───────────────────────────────── */
+function ModalAjustarStock({ open, producto, onClose, onGuardado }) {
+  const [tipo, setTipo] = useState("entrada");
+  const [cantidad, setCantidad] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setTipo("entrada");
+      setCantidad("");
+      setMotivo("");
+      setError("");
+    }
+  }, [open, producto?.id]);
+
+  if (!open || !producto) return null;
+
+  const cantidadNum = Number(cantidad);
+  const deltaValido = cantidad !== "" && !Number.isNaN(cantidadNum) && cantidadNum !== 0 &&
+    (tipo === "ajuste" || cantidadNum > 0);
+  const stockResultante = deltaValido ? producto.stock + cantidadNum : null;
+  const motivoRequerido = tipo === "ajuste" && !motivo.trim();
+
+  async function manejarGuardar(e) {
+    e.preventDefault();
+    if (!deltaValido || motivoRequerido) return;
+    setError("");
+    try {
+      setGuardando(true);
+      await ajustarStock({ productoId: producto.id, tipo, cantidad: cantidadNum, motivo });
+      onGuardado();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} titulo={`Ajustar stock — ${producto.nombre}`} size="sm">
+      <form className="inv-form" onSubmit={manejarGuardar}>
+        {error && <div className="nt-alert nt-alert-error">{error}</div>}
+
+        <div className="inv-stock-preview">
+          <span>Stock actual</span>
+          <strong>{producto.stock}</strong>
+        </div>
+
+        <div className="inv-form-field">
+          <label className="inv-label">Tipo de movimiento</label>
+          <div className="inv-tipo-toggle">
+            <button
+              type="button"
+              className={`inv-tipo-btn${tipo === "entrada" ? " is-active" : ""}`}
+              onClick={() => setTipo("entrada")}
+              disabled={guardando}
+            >
+              📥 Entrada de mercancía
+            </button>
+            <button
+              type="button"
+              className={`inv-tipo-btn${tipo === "ajuste" ? " is-active" : ""}`}
+              onClick={() => setTipo("ajuste")}
+              disabled={guardando}
+            >
+              ✎ Ajuste / corrección
+            </button>
+          </div>
+        </div>
+
+        <div className="inv-form-field">
+          <label className="inv-label">
+            {tipo === "entrada" ? "Unidades que llegaron" : "Cantidad a ajustar"}
+            <span className="inv-required">*</span>
+          </label>
+          <input
+            className="nt-field"
+            type="number"
+            step="1"
+            min={tipo === "entrada" ? "1" : undefined}
+            placeholder={tipo === "entrada" ? "Ej: 10" : "Ej: -2 (faltante) o 3 (sobrante)"}
+            value={cantidad}
+            onChange={(e) => setCantidad(e.target.value)}
+            disabled={guardando}
+            autoFocus
+          />
+          {tipo === "ajuste" && (
+            <p className="inv-help-text">
+              Usa un número negativo para reportar pérdidas, daños o faltantes; positivo si el
+              conteo físico reveló más unidades de las registradas.
+            </p>
+          )}
+        </div>
+
+        <div className="inv-form-field">
+          <label className="inv-label">
+            Motivo {tipo === "ajuste" && <span className="inv-required">*</span>}
+          </label>
+          <input
+            className="nt-field"
+            placeholder={
+              tipo === "entrada"
+                ? "Ej: Compra a proveedor XYZ (opcional)"
+                : "Ej: Producto dañado, faltante en conteo físico..."
+            }
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            disabled={guardando}
+          />
+        </div>
+
+        {stockResultante !== null && (
+          <div className={`inv-stock-preview inv-stock-preview--resultado${stockResultante < 0 ? " is-negativo" : ""}`}>
+            <span>Stock resultante</span>
+            <strong>{producto.stock} {cantidadNum > 0 ? "+" : ""}{cantidadNum} = {stockResultante}</strong>
+          </div>
+        )}
+
+        <div className="inv-form-actions">
+          <button className="inv-btn inv-btn-ghost" type="button" onClick={onClose} disabled={guardando}>
+            Cancelar
+          </button>
+          <button
+            className="inv-btn inv-btn-primary"
+            type="submit"
+            disabled={guardando || !deltaValido || motivoRequerido || stockResultante < 0}
+          >
+            {guardando ? "Guardando..." : "Confirmar ajuste"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/* ─── Modal: Historial de Stock (Kardex) ─────────────────── */
+function ModalHistorialStock({ open, producto, onClose }) {
+  const [movimientos, setMovimientos] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open || !producto) return;
+    setCargando(true);
+    setError("");
+    obtenerMovimientosInventario(producto.id)
+      .then(setMovimientos)
+      .catch((e) => setError(e.message))
+      .finally(() => setCargando(false));
+  }, [open, producto]);
+
+  if (!open || !producto) return null;
+
+  return (
+    <Modal open={open} onClose={onClose} titulo={`Historial de stock — ${producto.nombre}`} size="lg">
+      {error && <div className="nt-alert nt-alert-error">{error}</div>}
+
+      {cargando ? (
+        <div className="inv-loading">
+          <div className="inv-spinner" />
+          <span>Cargando historial...</span>
+        </div>
+      ) : movimientos.length === 0 ? (
+        <div className="inv-empty">
+          <div className="inv-empty-icon">📭</div>
+          <div>Este producto aún no tiene movimientos registrados.</div>
+        </div>
+      ) : (
+        <div className="nt-table-wrap">
+          <table className="nt-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th style={{ textAlign: "right" }}>Cantidad</th>
+                <th style={{ textAlign: "right" }}>Stock resultante</th>
+                <th>Usuario</th>
+                <th>Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movimientos.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    {new Date(m.creado_en).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}
+                  </td>
+                  <td><BadgeTipoMovimiento tipo={m.tipo} /></td>
+                  <td style={{ textAlign: "right", fontWeight: 700, color: m.cantidad > 0 ? "#15803d" : "#b91c1c" }}>
+                    {m.cantidad > 0 ? "+" : ""}{m.cantidad}
+                  </td>
+                  <td style={{ textAlign: "right", fontWeight: 700 }}>{m.stock_resultante}</td>
+                  <td className="nt-muted">{m.usuarios?.nombre ?? "—"}</td>
+                  <td className="nt-muted">{m.motivo ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -164,6 +415,9 @@ export default function InventarioPage() {
   const [modalProducto, setModalProducto] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   const [modalCategorias, setModalCategorias] = useState(false);
+  const [modalAjustarStock, setModalAjustarStock] = useState(false);
+  const [modalHistorial, setModalHistorial] = useState(false);
+  const [productoParaStock, setProductoParaStock] = useState(null);
 
   // Estado de formulario producto
   const [editandoId, setEditandoId] = useState(null);
@@ -325,7 +579,11 @@ export default function InventarioPage() {
     try {
       setGuardando(true);
       if (editandoId) {
-        await actualizarProducto(editandoId, payload);
+        // El stock no se envía al editar: se cambia únicamente desde el botón
+        // "Ajustar stock" (deja registro en el historial). Evita sobrescribirlo
+        // con un valor que pudo quedar desactualizado mientras el modal estaba abierto.
+        const { stock: _stock, ...payloadSinStock } = payload;
+        await actualizarProducto(editandoId, payloadSinStock);
         setMensaje("Producto actualizado correctamente.");
       } else {
         await crearProducto(payload);
@@ -361,6 +619,26 @@ export default function InventarioPage() {
     } finally {
       setGuardando(false);
     }
+  }
+
+  /* ── Modal ajustar stock / historial ─────────────────── */
+  function abrirAjustarStock(producto) {
+    if (!esAdmin) return;
+    setProductoParaStock(producto);
+    setModalAjustarStock(true);
+  }
+
+  function abrirHistorial(producto) {
+    if (!esAdmin) return;
+    setProductoParaStock(producto);
+    setModalHistorial(true);
+  }
+
+  async function manejarAjusteGuardado() {
+    setModalAjustarStock(false);
+    setProductoParaStock(null);
+    setMensaje("Stock actualizado correctamente.");
+    await cargarProductos();
   }
 
   /* ── Modal categorías ────────────────────────────────── */
@@ -553,6 +831,8 @@ export default function InventarioPage() {
                 esAdmin={esAdmin}
                 onEditar={abrirEditarProducto}
                 onEliminar={abrirEliminar}
+                onAjustarStock={abrirAjustarStock}
+                onVerHistorial={abrirHistorial}
               />
             ))}
           </div>
@@ -639,7 +919,7 @@ export default function InventarioPage() {
 
             <div className="inv-form-field">
               <label className="inv-label">
-                Stock Actual <span className="inv-required">*</span>
+                Stock {editandoId ? "Actual" : "Inicial"} {!editandoId && <span className="inv-required">*</span>}
               </label>
               <input
                 className="nt-field"
@@ -650,8 +930,15 @@ export default function InventarioPage() {
                 placeholder="0"
                 value={formulario.stock}
                 onChange={manejarCambioFormulario}
-                disabled={guardando}
+                disabled={guardando || Boolean(editandoId)}
+                title={editandoId ? "Usa el botón 'Ajustar stock' de la tarjeta para cambiar el stock." : undefined}
               />
+              {editandoId && (
+                <p className="inv-help-text">
+                  Para cambiar el stock usa el botón <strong>📥 Ajustar stock</strong> de la tarjeta del
+                  producto: así queda registrado en el historial.
+                </p>
+              )}
             </div>
 
             <div className="inv-form-field">
@@ -841,6 +1128,21 @@ export default function InventarioPage() {
           </div>
         </div>
       </Modal>
+
+      {/* ══ Modal: Ajustar Stock ══════════════════════════ */}
+      <ModalAjustarStock
+        open={modalAjustarStock}
+        producto={productoParaStock}
+        onClose={() => { setModalAjustarStock(false); setProductoParaStock(null); }}
+        onGuardado={manejarAjusteGuardado}
+      />
+
+      {/* ══ Modal: Historial de Stock (Kardex) ═══════════ */}
+      <ModalHistorialStock
+        open={modalHistorial}
+        producto={productoParaStock}
+        onClose={() => { setModalHistorial(false); setProductoParaStock(null); }}
+      />
     </AppShell>
   );
 }
