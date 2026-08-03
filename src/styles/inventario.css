@@ -433,6 +433,7 @@ html[data-theme="dark"] .inv-prod-cat {
 .inv-modal-sm { max-width: 420px; }
 .inv-modal-md { max-width: 560px; }
 .inv-modal-lg { max-width: 700px; }
+.inv-modal-xl { max-width: min(1280px, 96vw); }
 
 .inv-modal-header {
   display: flex;

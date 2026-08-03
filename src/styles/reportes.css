@@ -579,6 +579,88 @@ html[data-theme="dark"] .rpt-cat-total { color: #fbbf24; }
   }
 }
 
+/* ── Categoría clickeable → detalle de productos ─────────── */
+.rpt-cat-item--clickable {
+  grid-template-columns: 160px 1fr auto auto;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+
+.rpt-cat-item--clickable:hover,
+.rpt-cat-item--clickable:focus-visible {
+  background: var(--nt-nav-hover);
+  border-color: rgba(217, 119, 6, 0.4);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.rpt-cat-arrow {
+  font-weight: 800;
+  color: var(--nt-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .rpt-cat-item--clickable {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+/* Botón "volver" dentro de un detalle anidado (p.ej. detalle de categoría) */
+.rpt-btn-volver {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--nt-border);
+  background: var(--nt-surface-2);
+  color: var(--nt-text);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.rpt-btn-volver:hover {
+  background: var(--nt-nav-hover);
+}
+
+/* Encabezado del detalle de una categoría específica */
+.rpt-cat-detalle-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--nt-radius-sm);
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+html[data-theme="dark"] .rpt-cat-detalle-header {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+.rpt-cat-detalle-icono {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.rpt-cat-detalle-nombre {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--nt-text-strong);
+  text-transform: capitalize;
+}
+
+.rpt-cat-detalle-sub {
+  font-size: 12px;
+  color: var(--nt-muted);
+  margin-top: 1px;
+}
+
 /* ── Zona de peligro (limpieza de datos) ─────────────────── */
 .rpt-danger-zone {
   border: 1.5px solid rgba(220, 38, 38, 0.3);

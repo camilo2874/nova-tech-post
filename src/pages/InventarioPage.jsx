@@ -15,6 +15,12 @@ import {
   obtenerMovimientosInventario,
   obtenerProductos,
 } from "../services/productosServicio";
+import {
+  hoyLocal,
+  rangoSemanaActual,
+  rangoMesActual,
+  obtenerReporteReabastecimiento,
+} from "../services/reportesServicio";
 import "../styles/inventario.css";
 
 const TIMEOUT_FETCH_MS = 12000;
@@ -397,6 +403,273 @@ function ModalHistorialStock({ open, producto, onClose }) {
   );
 }
 
+/* ─── Badge de estado de stock (reabastecimiento) ────────── */
+function BadgeEstadoStock({ estado }) {
+  const estilos = {
+    ok:      { bg: "#dcfce7", fg: "#15803d", label: "✓ OK" },
+    bajo:    { bg: "#fef3c7", fg: "#92400e", label: "⚠️ Reponer" },
+    agotado: { bg: "#fee2e2", fg: "#b91c1c", label: "🔴 Agotado" },
+  };
+  const s = estilos[estado] ?? { bg: "#e2e8f0", fg: "#475569", label: estado };
+  return (
+    <span
+      style={{
+        background: s.bg,
+        color: s.fg,
+        padding: "2px 10px",
+        borderRadius: "999px",
+        fontSize: "0.74rem",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
+const PERIODOS_REAB = [
+  { id: "dia",     label: "Hoy" },
+  { id: "semana",  label: "Semana" },
+  { id: "mes",     label: "Mes" },
+  { id: "personalizado", label: "Personalizado" },
+];
+
+/* ─── Modal: Reporte de Reabastecimiento ─────────────────── */
+function ModalReabastecimiento({ open, onClose }) {
+  const [periodo, setPeriodo] = useState("semana");
+  const [fechaDesde, setFechaDesde] = useState(hoyLocal);
+  const [fechaHasta, setFechaHasta] = useState(hoyLocal);
+  const [busqueda, setBusqueda] = useState("");
+  const [reporte, setReporte] = useState(null);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+
+  // Ajusta el rango de fechas según el período elegido
+  useEffect(() => {
+    if (!open) return;
+    if (periodo === "dia") {
+      const hoy = hoyLocal();
+      setFechaDesde(hoy);
+      setFechaHasta(hoy);
+    } else if (periodo === "semana") {
+      const { desde, hasta } = rangoSemanaActual();
+      setFechaDesde(desde);
+      setFechaHasta(hasta);
+    } else if (periodo === "mes") {
+      const { desde, hasta } = rangoMesActual();
+      setFechaDesde(desde);
+      setFechaHasta(hasta);
+    }
+  }, [open, periodo]);
+
+  async function cargarReporte() {
+    setCargando(true);
+    setError("");
+    try {
+      const datos = await obtenerReporteReabastecimiento(fechaDesde, fechaHasta);
+      setReporte(datos);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  useEffect(() => {
+    if (open) {
+      setReporte(null);
+      setError("");
+      setBusqueda("");
+      setPeriodo("semana");
+    }
+  }, [open]);
+
+  const productosFiltrados = useMemo(() => {
+    if (!reporte) return [];
+    const termino = busqueda.trim().toLowerCase();
+    if (!termino) return reporte.productos;
+    return reporte.productos.filter(
+      (p) =>
+        p.nombre.toLowerCase().includes(termino) ||
+        p.categoria.toLowerCase().includes(termino)
+    );
+  }, [reporte, busqueda]);
+
+  if (!open) return null;
+
+  return (
+    <Modal open={open} onClose={onClose} titulo="📋 Reporte de reabastecimiento" size="xl">
+      <div className="inv-form" style={{ gap: "1rem" }}>
+        <p className="inv-help-text" style={{ margin: 0 }}>
+          Productos que se agotaron o están en stock bajo, junto con lo que se vendió de
+          cada uno en el período, para saber qué y cuánto volver a pedir al proveedor.
+        </p>
+
+        {error && <div className="nt-alert nt-alert-error">{error}</div>}
+
+        <div className="inv-tipo-toggle" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+          {PERIODOS_REAB.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`inv-tipo-btn${periodo === p.id ? " is-active" : ""}`}
+              onClick={() => setPeriodo(p.id)}
+              disabled={cargando}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {periodo === "personalizado" && (
+          <div className="inv-form-grid">
+            <div className="inv-form-field">
+              <label className="inv-label">Desde</label>
+              <input
+                className="nt-field"
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+                max={fechaHasta}
+              />
+            </div>
+            <div className="inv-form-field">
+              <label className="inv-label">Hasta</label>
+              <input
+                className="nt-field"
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+                min={fechaDesde}
+                max={hoyLocal()}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="inv-barcode-row">
+          <button
+            className="inv-btn inv-btn-primary"
+            type="button"
+            onClick={cargarReporte}
+            disabled={cargando}
+          >
+            {cargando ? "Consultando..." : "📊 Generar reporte"}
+          </button>
+          {reporte && (
+            <input
+              className="nt-field inv-grow"
+              placeholder="Buscar producto o categoría..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          )}
+        </div>
+
+        {cargando && (
+          <div className="inv-loading">
+            <div className="inv-spinner" />
+            <span>Consultando ventas e inventario...</span>
+          </div>
+        )}
+
+        {!cargando && reporte && (
+          <>
+            <div className="inv-stats-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+              <StatCard
+                icon="⚠️"
+                label="Para reponer"
+                value={reporte.resumen.totalParaReponer}
+                sub="Stock bajo o agotado"
+                variant={reporte.resumen.totalParaReponer > 0 ? "danger" : "green"}
+              />
+              <StatCard
+                icon="🚫"
+                label="Agotados"
+                value={reporte.resumen.totalAgotados}
+                sub="Sin unidades en stock"
+                variant={reporte.resumen.totalAgotados > 0 ? "danger" : "green"}
+              />
+              <StatCard
+                icon="📦"
+                label="De esos, ya se vendieron"
+                value={`${reporte.resumen.totalProductosConMovimiento} de ${reporte.resumen.totalParaReponer}`}
+                sub="Productos por reponer que tuvieron ventas en el período"
+                variant="blue"
+              />
+              <StatCard
+                icon="🛒"
+                label="Lo que vendiste de esos"
+                value={`${reporte.resumen.totalUnidadesVendidas.toLocaleString("es-CO")} uds.`}
+                sub={`${formatCOP(reporte.resumen.totalVendido)} en ventas de productos por reponer`}
+                variant="teal"
+              />
+            </div>
+
+            {productosFiltrados.length === 0 ? (
+              <div className="inv-empty">
+                <div className="inv-empty-icon">🎉</div>
+                <div>
+                  {busqueda
+                    ? "Ningún producto por reponer coincide con la búsqueda."
+                    : "¡Ningún producto está agotado o en stock bajo ahora mismo!"}
+                </div>
+              </div>
+            ) : (
+              <div className="nt-table-wrap">
+                <table className="nt-table">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Categoría</th>
+                      <th style={{ textAlign: "right" }}>Vendido</th>
+                      <th style={{ textAlign: "right" }}>Stock actual</th>
+                      <th style={{ textAlign: "right" }}>Stock mínimo</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productosFiltrados.map((p) => (
+                      <tr key={p.id}>
+                        <td style={{ fontWeight: 600 }}>{p.nombre}</td>
+                        <td>
+                          <span
+                            className="nt-pill"
+                            style={{ textTransform: "capitalize", fontSize: 12 }}
+                          >
+                            {p.categoria}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: "right", fontWeight: 700 }}>
+                          {p.cantidadVendida.toLocaleString("es-CO")}
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "right",
+                            fontWeight: 700,
+                            color: p.estado !== "ok" ? "var(--nt-danger)" : undefined,
+                          }}
+                        >
+                          {p.stock.toLocaleString("es-CO")}
+                        </td>
+                        <td style={{ textAlign: "right" }} className="nt-muted">
+                          {p.stockMinimo.toLocaleString("es-CO")}
+                        </td>
+                        <td><BadgeEstadoStock estado={p.estado} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 /* ─── Página principal ───────────────────────────────────── */
 export default function InventarioPage() {
   const { rol } = useAuth();
@@ -417,6 +690,7 @@ export default function InventarioPage() {
   const [modalCategorias, setModalCategorias] = useState(false);
   const [modalAjustarStock, setModalAjustarStock] = useState(false);
   const [modalHistorial, setModalHistorial] = useState(false);
+  const [modalReabastecimiento, setModalReabastecimiento] = useState(false);
   const [productoParaStock, setProductoParaStock] = useState(null);
 
   // Estado de formulario producto
@@ -777,6 +1051,13 @@ export default function InventarioPage() {
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+          <button
+            className="inv-btn inv-btn-ghost"
+            type="button"
+            onClick={() => setModalReabastecimiento(true)}
+          >
+            📋 Reabastecimiento
+          </button>
           {esAdmin ? (
             <button
               className="inv-btn inv-btn-ghost"
@@ -1142,6 +1423,12 @@ export default function InventarioPage() {
         open={modalHistorial}
         producto={productoParaStock}
         onClose={() => { setModalHistorial(false); setProductoParaStock(null); }}
+      />
+
+      {/* ══ Modal: Reporte de Reabastecimiento ═══════════ */}
+      <ModalReabastecimiento
+        open={modalReabastecimiento}
+        onClose={() => setModalReabastecimiento(false)}
       />
     </AppShell>
   );

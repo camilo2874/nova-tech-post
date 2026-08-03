@@ -43,6 +43,20 @@ export function etiquetaPeriodo(tipo, desde, hasta) {
 
 // ── Consultas ──────────────────────────────────────────────────────────────
 
+/**
+ * Capital invertido en el inventario actual = precio_compra × stock de cada
+ * producto, sumado. Es una foto del momento (no depende de fechas): representa
+ * cuánto dinero sigue "atrapado" en mercancía sin vender.
+ */
+async function _obtenerCapitalInvertidoActual() {
+  const { data, error } = await supabase.from("productos").select("precio_compra, stock");
+  if (error) return 0;
+  return (data ?? []).reduce(
+    (s, p) => s + Number(p.precio_compra ?? 0) * Number(p.stock ?? 0),
+    0
+  );
+}
+
 /** Lista de turnos disponibles (para el selector de turno en la UI) */
 export async function obtenerTurnosDisponibles() {
   const { data, error } = await supabase
@@ -58,7 +72,7 @@ export async function obtenerTurnosDisponibles() {
 
 /** Reporte completo de un turno específico */
 export async function obtenerReporteTurno(cajaId) {
-  const [cajaRes, ventasRes, movsRes] = await Promise.all([
+  const [cajaRes, ventasRes, movsRes, capitalInvertido] = await Promise.all([
     supabase
       .from("caja")
       .select(
@@ -78,6 +92,7 @@ export async function obtenerReporteTurno(cajaId) {
       .select("id, tipo, monto, concepto, creado_en, usuarios(nombre)")
       .eq("caja_id", cajaId)
       .order("creado_en", { ascending: true }),
+    _obtenerCapitalInvertidoActual(),
   ]);
 
   if (cajaRes.error) throw new Error(cajaRes.error.message);
@@ -92,6 +107,7 @@ export async function obtenerReporteTurno(cajaId) {
     ventas: ventasRes.data ?? [],
     movimientos: movsRes.data ?? [],
     turnos: [],
+    capitalInvertido,
   });
 }
 
@@ -107,7 +123,7 @@ export async function obtenerReportePorRango(fechaDesde, fechaHasta, tipo = "per
   const CAMPOS_CAJA =
     "id, abierto_en, cerrado_en, monto_apertura, monto_cierre_efectivo, saldo_calculado_cierre, usuarios(nombre)";
 
-  const [ventasRes, movsRes, turnosEnRangoRes, turnosAbiertosAntesRes] = await Promise.all([
+  const [ventasRes, movsRes, turnosEnRangoRes, turnosAbiertosAntesRes, capitalInvertido] = await Promise.all([
     supabase
       .from("ventas")
       .select(
@@ -140,6 +156,7 @@ export async function obtenerReportePorRango(fechaDesde, fechaHasta, tipo = "per
       .lt("abierto_en", desdeUTC)
       .order("abierto_en", { ascending: false })
       .limit(10),
+    _obtenerCapitalInvertidoActual(),
   ]);
 
   if (ventasRes.error) throw new Error(ventasRes.error.message);
@@ -163,12 +180,13 @@ export async function obtenerReportePorRango(fechaDesde, fechaHasta, tipo = "per
     movimientos: movsRes.data ?? [],
     turnos,
     turnosMultidia,
+    capitalInvertido,
   });
 }
 
 /** Reporte general con todo el historial disponible */
 export async function obtenerReporteGeneral() {
-  const [ventasRes, movsRes, turnosRes] = await Promise.all([
+  const [ventasRes, movsRes, turnosRes, capitalInvertido] = await Promise.all([
     supabase
       .from("ventas")
       .select(
@@ -188,6 +206,7 @@ export async function obtenerReporteGeneral() {
       )
       .order("abierto_en", { ascending: false })
       .limit(200),
+    _obtenerCapitalInvertidoActual(),
   ]);
 
   if (ventasRes.error) throw new Error(ventasRes.error.message);
@@ -200,12 +219,22 @@ export async function obtenerReporteGeneral() {
     ventas: ventasRes.data ?? [],
     movimientos: movsRes.data ?? [],
     turnos: turnosRes.data ?? [],
+    capitalInvertido,
   });
 }
 
 // ── Construcción del objeto reporte ───────────────────────────────────────
 
-function _construirReporte({ tipo, label, turno = null, ventas, movimientos, turnos, turnosMultidia = [] }) {
+function _construirReporte({
+  tipo,
+  label,
+  turno = null,
+  ventas,
+  movimientos,
+  turnos,
+  turnosMultidia = [],
+  capitalInvertido = 0,
+}) {
   const totalVentas = ventas.reduce((s, v) => s + Number(v.total), 0);
   const cantidadVentas = ventas.length;
   const totalEfectivo = ventas
@@ -288,6 +317,12 @@ function _construirReporte({ tipo, label, turno = null, ventas, movimientos, tur
   );
   const gananciaNeta = totalVentas - costoProductos;
 
+  // Saldo de inversión: cuánto capital sigue "atrapado" en el stock actual sin
+  // vender (precio_compra × stock, foto del momento) y qué porcentaje de ese
+  // capital ya se ha recuperado con la ganancia neta acumulada en el período.
+  const porcentajeRecuperado =
+    capitalInvertido > 0 ? (gananciaNeta / capitalInvertido) * 100 : null;
+
   return {
     tipo,
     label,
@@ -312,6 +347,8 @@ function _construirReporte({ tipo, label, turno = null, ventas, movimientos, tur
       efectivoEnCaja,
       costoProductos,
       gananciaNeta,
+      capitalInvertido,
+      porcentajeRecuperado,
     },
   };
 }
@@ -425,6 +462,90 @@ export async function obtenerReporteInventario() {
     categorias,
     resumen,
   };
+}
+
+// ── Reporte de reabastecimiento ───────────────────────────────────────────
+
+/**
+ * Reporte de reabastecimiento: solo productos AGOTADOS o en stock bajo (stock
+ * <= stock_minimo), junto con lo que se vendió de cada uno en el período dado.
+ * Su propósito es decirle al usuario exactamente qué reponer, no listar todo
+ * lo que se vendió (para eso está "Productos más vendidos" en Reportes).
+ */
+export async function obtenerReporteReabastecimiento(fechaDesde, fechaHasta) {
+  const desdeUTC = new Date(`${fechaDesde}T00:00:00`).toISOString();
+  const hastaUTC = new Date(`${fechaHasta}T23:59:59`).toISOString();
+
+  const [ventasRes, productosRes] = await Promise.all([
+    supabase
+      .from("ventas")
+      .select("id, creado_en, detalle_venta(producto_id, cantidad, precio_unitario)")
+      .gte("creado_en", desdeUTC)
+      .lte("creado_en", hastaUTC)
+      .limit(2000),
+    supabase
+      .from("productos")
+      .select("id, nombre, categoria, stock, stock_minimo, precio_compra, precio_venta"),
+  ]);
+
+  if (ventasRes.error) throw new Error(ventasRes.error.message);
+  if (productosRes.error) throw new Error(productosRes.error.message);
+
+  const vendidoPorProducto = {};
+  for (const venta of ventasRes.data ?? []) {
+    for (const item of venta.detalle_venta ?? []) {
+      if (!item.producto_id) continue;
+      if (!vendidoPorProducto[item.producto_id]) {
+        vendidoPorProducto[item.producto_id] = { cantidadVendida: 0, totalVendido: 0 };
+      }
+      vendidoPorProducto[item.producto_id].cantidadVendida += Number(item.cantidad);
+      vendidoPorProducto[item.producto_id].totalVendido +=
+        Number(item.cantidad) * Number(item.precio_unitario);
+    }
+  }
+
+  const productos = (productosRes.data ?? [])
+    .map((p) => {
+      const vendido = vendidoPorProducto[p.id] ?? { cantidadVendida: 0, totalVendido: 0 };
+      const stock = Number(p.stock ?? 0);
+      const stockMinimo = Number(p.stock_minimo ?? 2);
+      let estado = "ok";
+      if (stock <= 0) estado = "agotado";
+      else if (stock <= stockMinimo) estado = "bajo";
+      return {
+        id: p.id,
+        nombre: p.nombre,
+        categoria: p.categoria?.trim() || "Sin categoría",
+        stock,
+        stockMinimo,
+        precioCompra: Number(p.precio_compra ?? 0),
+        precioVenta: Number(p.precio_venta ?? 0),
+        cantidadVendida: vendido.cantidadVendida,
+        totalVendido: vendido.totalVendido,
+        estado,
+      };
+    })
+    // Solo interesa lo que realmente hay que reponer: agotado o en stock bajo.
+    // Los productos con stock sano no aparecen aquí aunque se hayan vendido
+    // (para eso está "Productos más vendidos" en Reportes).
+    .filter((p) => p.estado !== "ok")
+    .sort((a, b) => {
+      // Agotados primero, luego bajos; dentro de cada grupo, lo que más se vendió primero
+      const prioridad = { agotado: 0, bajo: 1 };
+      const diff = prioridad[a.estado] - prioridad[b.estado];
+      if (diff !== 0) return diff;
+      return b.cantidadVendida - a.cantidadVendida;
+    });
+
+  const resumen = {
+    totalProductosConMovimiento: productos.filter((p) => p.cantidadVendida > 0).length,
+    totalUnidadesVendidas: productos.reduce((s, p) => s + p.cantidadVendida, 0),
+    totalVendido: productos.reduce((s, p) => s + p.totalVendido, 0),
+    totalParaReponer: productos.length,
+    totalAgotados: productos.filter((p) => p.estado === "agotado").length,
+  };
+
+  return { productos, resumen };
 }
 
 function _fechaCorta(fecha) {

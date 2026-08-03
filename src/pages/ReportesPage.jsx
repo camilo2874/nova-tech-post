@@ -279,7 +279,7 @@ function TopProductos({ productos }) {
   );
 }
 
-function VentasPorCategoria({ categorias }) {
+function VentasPorCategoria({ categorias, onSelect }) {
   if (!categorias.length) return null;
   const maxTotal = Math.max(...categorias.map((c) => c.total), 1);
   return (
@@ -287,7 +287,14 @@ function VentasPorCategoria({ categorias }) {
       {categorias.map((c) => {
         const pct = (c.total / maxTotal) * 100;
         return (
-          <div key={c.categoria} className="rpt-cat-item">
+          <div
+            key={c.categoria}
+            className={`rpt-cat-item${onSelect ? " rpt-cat-item--clickable" : ""}`}
+            onClick={onSelect ? () => onSelect(c.categoria) : undefined}
+            role={onSelect ? "button" : undefined}
+            tabIndex={onSelect ? 0 : undefined}
+            onKeyDown={onSelect ? (e) => e.key === "Enter" && onSelect(c.categoria) : undefined}
+          >
             <div className="rpt-cat-info">
               <span className="rpt-cat-nombre">{c.categoria}</span>
               <span className="rpt-cat-unidades">{c.cantidad.toLocaleString("es-CO")} uds.</span>
@@ -296,9 +303,110 @@ function VentasPorCategoria({ categorias }) {
               <div className="rpt-cat-bar-fill" style={{ width: `${pct}%` }} />
             </div>
             <div className="rpt-cat-total">{COP(c.total)}</div>
+            {onSelect && <span className="rpt-cat-arrow">→</span>}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/** Detalle de productos vendidos de UNA categoría específica (al hacer clic en ella) */
+function DetalleProductosCategoria({ categoria, ventas, onVolver }) {
+  const productos = useMemo(() => {
+    const mapa = {};
+    for (const venta of ventas) {
+      for (const item of venta.detalle_venta ?? []) {
+        const cat = item.productos?.categoria?.trim() || "Sin categoría";
+        if (cat !== categoria) continue;
+        const nombre = item.productos?.nombre ?? "Producto desconocido";
+        if (!mapa[nombre]) {
+          mapa[nombre] = { nombre, cantidad: 0, total: 0, costo: 0 };
+        }
+        const cantidad = Number(item.cantidad);
+        mapa[nombre].cantidad += cantidad;
+        mapa[nombre].total += cantidad * Number(item.precio_unitario);
+        mapa[nombre].costo += cantidad * Number(item.productos?.precio_compra ?? 0);
+      }
+    }
+    return Object.values(mapa).sort((a, b) => b.total - a.total);
+  }, [ventas, categoria]);
+
+  const totales = productos.reduce(
+    (acc, p) => ({
+      cantidad: acc.cantidad + p.cantidad,
+      total: acc.total + p.total,
+      ganancia: acc.ganancia + (p.total - p.costo),
+    }),
+    { cantidad: 0, total: 0, ganancia: 0 }
+  );
+
+  return (
+    <div className="nt-stack" style={{ gap: 12 }}>
+      <button className="rpt-btn-volver" type="button" onClick={onVolver}>
+        ← Todas las categorías
+      </button>
+
+      <div className="rpt-cat-detalle-header">
+        <span className="rpt-cat-detalle-icono">🏷️</span>
+        <div>
+          <div className="rpt-cat-detalle-nombre">{categoria}</div>
+          <div className="rpt-cat-detalle-sub">
+            {productos.length} producto{productos.length !== 1 ? "s" : ""} vendido
+            {productos.length !== 1 ? "s" : ""} en este período
+          </div>
+        </div>
+      </div>
+
+      {productos.length === 0 ? (
+        <div className="rpt-empty">
+          <div className="rpt-empty-icon">📭</div>
+          <p className="rpt-empty-text">No hay productos vendidos en esta categoría.</p>
+        </div>
+      ) : (
+        <div className="nt-table-wrap">
+          <table className="nt-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th style={{ textAlign: "right" }}>Cantidad</th>
+                <th style={{ textAlign: "right" }}>Total vendido</th>
+                <th style={{ textAlign: "right" }}>Ganancia</th>
+              </tr>
+            </thead>
+            <tbody>
+              {productos.map((p) => (
+                <tr key={p.nombre}>
+                  <td style={{ fontWeight: 600 }}>{p.nombre}</td>
+                  <td style={{ textAlign: "right" }}>{p.cantidad.toLocaleString("es-CO")}</td>
+                  <td style={{ textAlign: "right" }} className="rpt-monto-total">{COP(p.total)}</td>
+                  <td
+                    style={{ textAlign: "right" }}
+                    className={p.total - p.costo >= 0 ? "rpt-monto-pos" : "rpt-monto-neg"}
+                  >
+                    {COP(p.total - p.costo)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="rpt-table-footer-row">
+                <td style={{ fontWeight: 700 }}>Total</td>
+                <td style={{ textAlign: "right", fontWeight: 700 }}>
+                  {totales.cantidad.toLocaleString("es-CO")}
+                </td>
+                <td style={{ textAlign: "right", fontWeight: 700 }}>{COP(totales.total)}</td>
+                <td
+                  style={{ textAlign: "right", fontWeight: 700 }}
+                  className={totales.ganancia >= 0 ? "rpt-monto-pos" : "rpt-monto-neg"}
+                >
+                  {COP(totales.ganancia)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -658,6 +766,7 @@ function DetalleModal({ tipo, reporte, onClose }) {
   const [filtroMovimiento, setFiltroMovimiento] = useState("todos");
   const [busquedaMov, setBusquedaMov]           = useState("");
   const [busquedaInv, setBusquedaInv]           = useState("");
+  const [categoriaDetalle, setCategoriaDetalle] = useState(null);
 
   const productosInventarioFiltrados = useMemo(() => {
     if (tipo !== "inventario-productos") return [];
@@ -728,7 +837,11 @@ function DetalleModal({ tipo, reporte, onClose }) {
 
         {/* Header */}
         <div className="rpt-detail-header">
-          <h2 className="rpt-detail-title">{TITULOS[tipo]}</h2>
+          <h2 className="rpt-detail-title">
+            {tipo === "categorias" && categoriaDetalle
+              ? `Categoría: ${categoriaDetalle}`
+              : TITULOS[tipo]}
+          </h2>
           <button className="rpt-detail-close" onClick={onClose} aria-label="Cerrar">✕</button>
         </div>
 
@@ -829,7 +942,18 @@ function DetalleModal({ tipo, reporte, onClose }) {
 
           {tipo === "categorias" && (
             <div className="nt-card" style={{ padding: "12px 16px" }}>
-              <VentasPorCategoria categorias={reporte.ventasPorCategoria} />
+              {categoriaDetalle ? (
+                <DetalleProductosCategoria
+                  categoria={categoriaDetalle}
+                  ventas={reporte.ventas}
+                  onVolver={() => setCategoriaDetalle(null)}
+                />
+              ) : (
+                <VentasPorCategoria
+                  categorias={reporte.ventasPorCategoria}
+                  onSelect={setCategoriaDetalle}
+                />
+              )}
             </div>
           )}
 
@@ -1268,12 +1392,6 @@ export default function ReportesPage() {
                 icon="💵"
               />
               <KpiCard
-                label="Ticket promedio"
-                value={COP(reporte.resumen.ticketPromedio)}
-                color="teal"
-                icon="🎟️"
-              />
-              <KpiCard
                 label="Ventas en efectivo"
                 value={COP(reporte.resumen.totalEfectivo)}
                 color="green"
@@ -1321,6 +1439,37 @@ export default function ReportesPage() {
                 sub="Venta − costo de productos"
                 color={reporte.resumen.gananciaNeta >= 0 ? "purple" : "red"}
                 icon="💹"
+              />
+              <KpiCard
+                label="Capital a reinvertir"
+                value={COP(reporte.resumen.costoProductos)}
+                sub="Total ventas − ganancia neta"
+                color="amber"
+                icon="🔁"
+              />
+              <KpiCard
+                label="Capital invertido en stock"
+                value={COP(reporte.resumen.capitalInvertido)}
+                sub="Precio compra × stock actual (sin vender)"
+                color="blue"
+                icon="📥"
+              />
+              <KpiCard
+                label="Inversión recuperada"
+                value={
+                  reporte.resumen.porcentajeRecuperado === null
+                    ? "—"
+                    : `${reporte.resumen.porcentajeRecuperado.toFixed(1)}%`
+                }
+                sub="Ganancia neta ÷ capital invertido"
+                color={
+                  reporte.resumen.porcentajeRecuperado === null
+                    ? "teal"
+                    : reporte.resumen.porcentajeRecuperado >= 100
+                    ? "green"
+                    : "amber"
+                }
+                icon="🧮"
               />
             </div>
 
